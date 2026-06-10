@@ -11,7 +11,8 @@ flask-bcrypt==1.0.1
 jdatetime==4.1.0
 openpyxl==3.1.2
 requests==2.31.0
-Pillow==10.1.0
+Pillow==10.2.0
 cryptography==41.0.7
 psycopg2-binary==2.9.9
 gunicorn==21.2.0
+Werkzeug==2.3.7

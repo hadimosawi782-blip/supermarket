@@ -38,13 +38,7 @@ def create_and_setup_app():
 if __name__ == "__main__":
     try:
         app = create_and_setup_app()
-        
-        print("\n🚀 Supermarket Management System")
-        print("🌐 http://127.0.0.1:5000")
-        print("🔑 admin / admin123")
-        
-        app.run(debug=False, host='0.0.0.0', port=5000)
-        
+        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         input("Press Enter to exit...")
