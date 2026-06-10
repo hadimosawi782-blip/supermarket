@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}جستجوی پیشرفته فروش‌ها{% endblock %}
+
+{% block content %}
+<div class="salessearch-page-wrapper">
+    <div class="container mt-4 fade-in salessearch-container">
+        <h1 class="text-center mb-4 salessearch-title">🔍 جستجوی پیشرفته فروش‌ها</h1>
+
+        <div class="salessearch-filter-card mb-4">
+            <h5 class="salessearch-filter-title"><i class="fas fa-filter"></i> 🔎 فیلترهای جستجو</h5>
+            <form method="GET" action="{{ url_for('main_bp.sales_search') }}" class="row g-3">
+                <div class="col-md-3"><input type="text" name="invoice_number" class="form-control salessearch-input" placeholder="شماره بل..." value="{{ request.args.get('invoice_number', '') }}"></div>
+                <div class="col-md-3"><input type="text" name="customer_name" class="form-control salessearch-input" placeholder="نام مشتری..." value="{{ request.args.get('customer_name', '') }}"></div>
+                <div class="col-md-2"><input type="date" name="start_date" class="form-control salessearch-input" value="{{ request.args.get('start_date', '') }}"></div>
+                <div class="col-md-2"><input type="date" name="end_date" class="form-control salessearch-input" value="{{ request.args.get('end_date', '') }}"></div>
+                <div class="col-md-2"><button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> جستجو</button></div>
+            </form>
+            <div class="salessearch-actions mt-3">
+                <a href="{{ url_for('main_bp.list_sales') }}" class="btn btn-secondary"><i class="fas fa-list"></i> 📋 بازگشت به لیست فروشات</a>
+            </div>
+        </div>
+
+        {% if request.args.get('invoice_number') or request.args.get('customer_name') or request.args.get('start_date') %}
+        <!-- آمار نتایج -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3"><div class="salessearch-stat-card info"><small>📊 تعداد بلها</small><h3>{{ sales|length }}</h3></div></div>
+            <div class="col-md-3"><div class="salessearch-stat-card success"><small>💰 مجموع مبلغ</small><h3>{{ "{:,.0f}".format(total_amount) }} افغانی</h3></div></div>
+            <div class="col-md-3"><div class="salessearch-stat-card purple"><small>💳 مجموع پرداختی</small><h3>{{ "{:,.0f}".format(total_paid) }} افغانی</h3></div></div>
+            <div class="col-md-3"><div class="salessearch-stat-card warning"><small>📉 مجموع قرض داری</small><h3>{{ "{:,.0f}".format(total_debt) }} افغانی</h3></div></div>
+        </div>
+
+        {% if sales %}
+        <div class="salessearch-table-container">
+            <div class="salessearch-table-header"><h5 class="mb-0"><i class="fas fa-table"></i> نتایج جستجو</h5></div>
+            <div class="salessearch-table-body">
+                <div class="table-responsive">
+                    <table class="salessearch-table">
+                        <thead>
+                            <tr><th>شماره بل</th><th>تاریخ</th><th>مشتری</th><th>مبلغ کل</th><th>تخفیف</th><th>پرداختی</th><th>قرض</th><th>عملیات</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in sales %}
+                            <tr>
+                                <td class="fw-bold">{{ sale.invoice_number }}</td>
+                                <td>{{ sale.date|persian_date if sale.date else 'بدون تاریخ' }}</td>
+                                <td>{{ sale.customer.name if sale.customer else 'بدون مشتری' }}</td>
+                                <td>{{ "{:,.0f}".format(sale.total_amount) }} افغانی</td>
+                                <td>{{ "{:,.0f}".format(sale.total_discount) }} افغانی</td>
+                                <td>{{ "{:,.0f}".format(sale.amount_paid) }} افغانی</td>
+                                <td><span class="badge {% if sale.remaining_debt > 0 %}bg-danger{% else %}bg-success{% endif %}">{{ "{:,.0f}".format(sale.remaining_debt) }} افغانی</span></td>
+                                <td>
+                                    <div class="salessearch-btn-group">
+                                        <a href="{{ url_for('main_bp.view_invoice', sale_id=sale.id) }}" class="btn btn-sm btn-info" title="مشاهده بل">👁️</a>
+                                        <a href="{{ url_for('main_bp.edit_sale_full', sale_id=sale.id) }}" class="btn btn-sm btn-warning" title="ویرایش کامل">📝</a>
+                                        <a href="{{ url_for('main_bp.print_invoice', sale_id=sale.id) }}" target="_blank" class="btn btn-sm btn-secondary" title="چاپ بل">🖨️</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="salessearch-empty"><i class="fas fa-search fa-4x mb-3"></i><h3>🔍 هیچ بلی با معیارهای جستجوی شما پیدا نشد</h3><p>لطفاً معیارهای جستجو را تغییر دهید</p></div>
+        {% endif %}
+        {% else %}
+        <div class="salessearch-guide">
+            <i class="fas fa-info-circle fa-3x mb-3"></i>
+            <h3>📝 راهنمای جستجو</h3>
+            <div class="row">
+                <div class="col-md-6"><ul><li><strong>شماره بل:</strong> جستجو بر اساس شماره دقیق بل</li><li><strong>نام مشتری:</strong> جستجو بر اساس نام یا بخشی از نام مشتری</li></ul></div>
+                <div class="col-md-6"><ul><li><strong>بازه زمانی:</strong> جستجو فروشات در تاریخ مشخص</li><li><strong>ترکیبی:</strong> استفاده همزمان از چند فیلتر</li></ul></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <button onclick="window.print()" class="btn btn-primary m-1"><i class="fas fa-print"></i> 🖨️ چاپ گزارش</button>
+            <a href="{{ url_for('main_bp.list_sales') }}" class="btn btn-secondary m-1"><i class="fas fa-list"></i> 📋 مشاهده همه فروشات</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.salessearch-page-wrapper { width: 100%; }
+.salessearch-title { color: #FFD700; }
+
+.salessearch-filter-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 25px;
+}
+.salessearch-filter-title { color: #FFD700; margin-bottom: 20px; }
+.salessearch-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+.salessearch-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+.salessearch-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+}
+.salessearch-stat-card.info { border-top: 4px solid #22d3ee; }
+.salessearch-stat-card.success { border-top: 4px solid #4ade80; }
+.salessearch-stat-card.purple { border-top: 4px solid #a78bfa; }
+.salessearch-stat-card.warning { border-top: 4px solid #fbbf24; }
+.salessearch-stat-card h3 { color: #FFD700; margin: 10px 0 0; }
+
+.salessearch-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.salessearch-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.salessearch-table-header h5 { color: #FFD700; margin: 0; }
+.salessearch-table { width: 100%; border-collapse: collapse; }
+.salessearch-table th { background: rgba(0, 0, 0, 0.4); color: #FFD700; padding: 12px; font-size: 13px; text-align: center; }
+.salessearch-table td { padding: 10px; color: #e2e8f0; border-bottom: 1px solid rgba(255, 215, 0, 0.1); text-align: center; }
+.salessearch-btn-group { display: flex; gap: 5px; justify-content: center; }
+
+.salessearch-empty, .salessearch-guide { text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; }
+.salessearch-empty h3, .salessearch-guide h3 { color: #FFD700; }
+.salessearch-guide ul { text-align: right; color: rgba(255, 255, 255, 0.7); }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+{% endblock %}

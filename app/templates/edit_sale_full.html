@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+{% block title %}ویرایش بل - {{ sale.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="editsale-page-wrapper">
+    <div class="container-fluid mt-4 fade-in editsale-container">
+
+        <!-- هدر -->
+        <div class="editsale-header mb-4">
+            <div>
+                <h1 class="editsale-title">✏️ ویرایش بل فروش</h1>
+                <p class="editsale-subtitle">شماره بل: <strong>{{ sale.invoice_number }}</strong> | تاریخ: {{ sale.date|persian_datetime }}</p>
+            </div>
+            <div class="editsale-header-actions">
+                <a href="{{ url_for('main_bp.view_invoice', sale_id=sale.id) }}" class="btn btn-info">
+                    <i class="fas fa-eye"></i> مشاهده بل
+                </a>
+                <a href="{{ url_for('main_bp.print_invoice', sale_id=sale.id) }}" target="_blank" class="btn btn-primary">
+                    <i class="fas fa-print"></i> چاپ
+                </a>
+                <a href="{{ url_for('main_bp.list_sales') }}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> فروشات
+                </a>
+            </div>
+        </div>
+
+        <!-- باکس موجودی صندوق -->
+        <div class="editsale-cash-box mb-4">
+            <div class="editsale-cash-card">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> 💰 موجودی صندوق</h5>
+                    </div>
+                    <div class="col-md-6 text-left">
+                        <h3 class="{% if cash_balance|default(0) <= 0 %}text-danger{% else %}text-success{% endif %} mb-0">
+                            {{ "{:,.0f}".format(cash_balance|default(0)) }} افغانی
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- آمار -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3"><div class="editsale-stat-card blue"><span>🧾 شماره بل</span><h4>{{ sale.invoice_number }}</h4></div></div>
+            <div class="col-md-3"><div class="editsale-stat-card purple"><span>👤 مشتری</span><h4>{% if sale.customer %}{{ sale.customer.name }}{% else %}مشتری عمومی{% endif %}</h4></div></div>
+            <div class="col-md-3"><div class="editsale-stat-card green"><span>💰 مبلغ فعلی</span><h4>{{ "{:,.0f}".format(sale.total_amount) }} افغانی</h4></div></div>
+            <div class="col-md-3"><div class="editsale-stat-card orange"><span>📦 تعداد آیتم</span><h4>{{ sale.items|length }}</h4></div></div>
+        </div>
+
+        <form method="POST" id="editSaleForm">
+            {{ form.hidden_tag() }}
+
+            <!-- مشتری -->
+            <div class="editsale-card mb-4">
+                <div class="editsale-card-header">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> 👤 اطلاعات مشتری</h5>
+                </div>
+                <div class="editsale-card-body">
+                    <select name="customer_id" class="form-control editsale-input">
+                        {% for value, label in form.customer_id.choices %}
+                        <option value="{{ value }}" {% if form.customer_id.data == value or (value == 0 and not sale.customer) %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- محصولات -->
+            <div class="editsale-card mb-4">
+                <div class="editsale-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-boxes"></i> 📦 محصولات بل</h5>
+                    <button type="button" onclick="addProductRow()" class="btn btn-success btn-sm">
+                        <i class="fas fa-plus"></i> افزودن محصول
+                    </button>
+                </div>
+                <div class="editsale-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="editsale-table">
+                            <thead>
+                                <tr>
+                                    <th>محصول</th>
+                                    <th>کارتن</th>
+                                    <th>تکی</th>
+                                    <th>تعداد کل</th>
+                                    <th>قیمت</th>
+                                    <th>تخفیف %</th>
+                                    <th>مبلغ نهایی</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsBody">
+                                {% for item in sale.items %}
+                                {% set items_per_carton = item.product.items_per_carton if item.product else 1 %}
+                                {% set carton_qty = (item.quantity // items_per_carton) if items_per_carton else 0 %}
+                                {% set single_qty = (item.quantity % items_per_carton) if items_per_carton else item.quantity %}
+                                <tr class="product-row" data-items-per-carton="{{ items_per_carton }}">
+                                    <td>
+                                        <select name="product_id[]" class="form-control editsale-input product-select" required>
+                                            <option value="">انتخاب محصول</option>
+                                            {% for product in products %}
+                                            <option value="{{ product.id }}" 
+                                                    data-price="{{ product.selling_price }}"
+                                                    data-carton="{{ product.items_per_carton or 1 }}"
+                                                    {% if item.product_id == product.id %}selected{% endif %}>
+                                                {{ product.name }} (موجودی: {{ product.quantity }} کارتن + {{ product.single_quantity }} تک)
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="carton_quantity[]" class="form-control editsale-input carton-qty" 
+                                               min="0" step="1" value="{{ carton_qty }}">
+                                    </td>
+                                    <td>
+                                        <input type="number" name="single_quantity[]" class="form-control editsale-input single-qty" 
+                                               min="0" step="1" value="{{ single_qty }}">
+                                    </td>
+                                    <td>
+                                        <input type="number" name="quantity[]" class="form-control editsale-input total-qty" 
+                                               value="{{ item.quantity }}" readonly>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="price[]" class="form-control editsale-input price" 
+                                               value="{{ item.selling_price }}" step="0.01" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="discount[]" class="form-control editsale-input discount" 
+                                               value="{{ item.discount_percent }}" min="0" max="100" step="0.01">
+                                    </td>
+                                    <td>
+                                        <span class="item-total text-success fw-bold">
+                                            {{ "{:,.0f}".format(item.final_amount) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button type="button" onclick="removeRow(this)" class="btn btn-danger btn-sm">🗑</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="6" class="text-start fw-bold">💰 مجموع کل اقلام:</td>
+                                    <td colspan="2"><span id="grandTotalItems" class="editsale-grand-total">0</span> افغانی</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ✅ بخش جدید: اطلاعات مالی فاکتور -->
+            <div class="editsale-card mb-4">
+                <div class="editsale-card-header" style="background: rgba(255, 193, 7, 0.2);">
+                    <h5 class="mb-0"><i class="fas fa-calculator"></i> 💰 اطلاعات مالی فاکتور</h5>
+                </div>
+                <div class="editsale-card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="editsale-label">🏷️ تخفیف کل فاکتور (%)</label>
+                            <input type="number" name="total_discount_percent" id="totalDiscountPercent" 
+                                   class="form-control editsale-input" 
+                                   value="{{ sale.total_discount_percent|default(0) }}" 
+                                   min="0" max="100" step="0.01">
+                            <small class="editsale-hint">درصد تخفیف از کل مبلغ</small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="editsale-label">💰 مبلغ پرداختی</label>
+                            <input type="number" name="amount_paid" id="amountPaid" 
+                                   class="form-control editsale-input" 
+                                   value="{{ sale.amount_paid|default(0) }}" 
+                                   min="0" step="0.01">
+                            <small class="editsale-hint">مبلغی که مشتری پرداخت کرده</small>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="editsale-label">📝 بدهی باقیمانده</label>
+                            <input type="text" id="remainingDebt" class="form-control editsale-input" 
+                                   readonly style="background: rgba(220, 53, 69, 0.2) !important;">
+                            <small class="editsale-hint text-warning">مبلغی که هنوز پرداخت نشده</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="editsale-label">📝 توضیحات فاکتور</label>
+                            <textarea name="description" class="form-control editsale-input" 
+                                      rows="2" placeholder="توضیحات اضافی...">{{ sale.description|default('') }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-4">
+                            <div class="editsale-summary-box">
+                                <span>💰 جمع کل اقلام:</span>
+                                <strong id="summaryItemsTotal">0</strong>
+                                <span>افغانی</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="editsale-summary-box">
+                                <span>🏷️ تخفیف کل:</span>
+                                <strong id="summaryDiscount">0</strong>
+                                <span>افغانی</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="editsale-summary-box" style="background: rgba(74, 222, 128, 0.2);">
+                                <span>🎯 مبلغ نهایی:</span>
+                                <strong id="summaryFinalAmount">0</strong>
+                                <span>افغانی</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4 justify-content-center">
+                <button type="submit" class="btn btn-success btn-lg px-5"><i class="fas fa-save"></i> 💾 ذخیره تغییرات</button>
+                <a href="{{ url_for('main_bp.view_invoice', sale_id=sale.id) }}" class="btn btn-secondary btn-lg px-5"><i class="fas fa-times"></i> ❌ انصراف</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.editsale-page-wrapper { width: 100%; }
+.editsale-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+.editsale-title { color: #FFD700; font-size: 28px; margin-bottom: 5px; }
+.editsale-subtitle { color: rgba(255, 255, 255, 0.7); margin: 0; }
+.editsale-header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.editsale-cash-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 15px 20px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.editsale-stat-card { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border-radius: 16px; padding: 15px; text-align: center; border: 1px solid rgba(255, 215, 0, 0.2); }
+.editsale-stat-card.blue { border-top: 4px solid #22d3ee; }
+.editsale-stat-card.purple { border-top: 4px solid #a78bfa; }
+.editsale-stat-card.green { border-top: 4px solid #4ade80; }
+.editsale-stat-card.orange { border-top: 4px solid #fbbf24; }
+.editsale-stat-card span { color: rgba(255, 255, 255, 0.6); font-size: 12px; }
+.editsale-stat-card h4 { color: #FFD700; margin: 8px 0 0; font-size: 16px; }
+
+.editsale-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.editsale-card-header {
+    background: rgba(6, 182, 212, 0.2);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.editsale-card-header h5 { color: #FFD700; margin: 0; }
+.editsale-card-body { padding: 20px; }
+
+.editsale-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+.editsale-input option { color: #FFD700; background: #1a1a2e; }
+.editsale-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+
+.editsale-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.editsale-hint {
+    display: block;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    margin-top: 5px;
+}
+
+.editsale-summary-box {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+.editsale-summary-box span {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+}
+.editsale-summary-box strong {
+    color: #FFD700;
+    font-size: 18px;
+    margin: 0 8px;
+}
+
+.editsale-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+.editsale-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    font-size: 13px;
+    text-align: center;
+}
+.editsale-table td {
+    padding: 10px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    text-align: center;
+}
+.editsale-grand-total { color: #4ade80; font-size: 22px; font-weight: bold; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+
+<script>
+function attachEvents(row) {
+    const productSelect = row.querySelector('.product-select');
+    productSelect.addEventListener('change', function() {
+        const opt = this.options[this.selectedIndex];
+        const itemsPerCarton = parseInt(opt.dataset.carton || 1);
+        row.dataset.itemsPerCarton = itemsPerCarton;
+        row.querySelector('.price').value = opt.dataset.price || 0;
+        updateTotalQty(row);
+    });
+    
+    row.querySelector('.carton-qty').addEventListener('input', () => updateTotalQty(row));
+    row.querySelector('.single-qty').addEventListener('input', () => updateTotalQty(row));
+    row.querySelector('.price').addEventListener('input', () => calculateRow(row));
+    row.querySelector('.discount').addEventListener('input', () => calculateRow(row));
+}
+
+function updateTotalQty(row) {
+    const itemsPerCarton = parseFloat(row.dataset.itemsPerCarton || 1);
+    const cartonQty = parseFloat(row.querySelector('.carton-qty').value) || 0;
+    const singleQty = parseFloat(row.querySelector('.single-qty').value) || 0;
+    const totalQty = (cartonQty * itemsPerCarton) + singleQty;
+    row.querySelector('.total-qty').value = totalQty;
+    calculateRow(row);
+}
+
+function calculateRow(row) {
+    const qty = parseFloat(row.querySelector('.total-qty').value) || 0;
+    const price = parseFloat(row.querySelector('.price').value) || 0;
+    const discount = parseFloat(row.querySelector('.discount').value) || 0;
+    let total = qty * price;
+    total = total - (total * discount / 100);
+    row.querySelector('.item-total').innerText = total.toLocaleString();
+    calculateGrandTotal();
+}
+
+function calculateGrandTotal() {
+    let grandTotal = 0;
+    document.querySelectorAll('.item-total').forEach(el => {
+        let val = parseFloat(el.innerText.replace(/,/g, '')) || 0;
+        grandTotal += val;
+    });
+    
+    document.getElementById('grandTotalItems').innerText = grandTotal.toLocaleString();
+    document.getElementById('summaryItemsTotal').innerText = grandTotal.toLocaleString();
+    
+    // محاسبه تخفیف کل فاکتور
+    const discountPercent = parseFloat(document.getElementById('totalDiscountPercent').value) || 0;
+    const discountAmount = grandTotal * (discountPercent / 100);
+    document.getElementById('summaryDiscount').innerText = discountAmount.toLocaleString();
+    
+    // محاسبه مبلغ نهایی
+    const finalAmount = grandTotal - discountAmount;
+    document.getElementById('summaryFinalAmount').innerText = finalAmount.toLocaleString();
+    
+    // محاسبه بدهی باقیمانده
+    const amountPaid = parseFloat(document.getElementById('amountPaid').value) || 0;
+    const remainingDebt = finalAmount - amountPaid;
+    document.getElementById('remainingDebt').value = remainingDebt.toLocaleString() + ' افغانی';
+    
+    if (remainingDebt < 0) {
+        document.getElementById('remainingDebt').style.color = '#ff4757';
+    } else if (remainingDebt > 0) {
+        document.getElementById('remainingDebt').style.color = '#ffa502';
+    } else {
+        document.getElementById('remainingDebt').style.color = '#4ade80';
+    }
+}
+
+function addProductRow() {
+    const tbody = document.getElementById('productsBody');
+    const row = document.createElement('tr');
+    row.className = 'product-row';
+    row.dataset.itemsPerCarton = 1;
+    
+    row.innerHTML = `
+        <td>
+            <select name="product_id[]" class="form-control editsale-input product-select" required>
+                <option value="">انتخاب محصول</option>
+                {% for product in products %}
+                <option value="{{ product.id }}" data-price="{{ product.selling_price }}" data-carton="{{ product.items_per_carton or 1 }}">
+                    {{ product.name }} (موجودی: {{ product.quantity }} کارتن + {{ product.single_quantity }} تک)
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td><input type="number" name="carton_quantity[]" class="form-control editsale-input carton-qty" min="0" step="1" value="0"></td>
+        <td><input type="number" name="single_quantity[]" class="form-control editsale-input single-qty" min="0" step="1" value="0"></td>
+        <td><input type="number" name="quantity[]" class="form-control editsale-input total-qty" value="0" readonly></td>
+        <td><input type="number" name="price[]" class="form-control editsale-input price" value="0" step="0.01" required></td>
+        <td><input type="number" name="discount[]" class="form-control editsale-input discount" value="0" min="0" max="100" step="0.01"></td>
+        <td><span class="item-total text-success fw-bold">0</span></td>
+        <td><button type="button" onclick="removeRow(this)" class="btn btn-danger btn-sm">🗑</button></td>
+    `;
+    
+    tbody.appendChild(row);
+    attachEvents(row);
+}
+
+function removeRow(btn) {
+    if (document.querySelectorAll('.product-row').length <= 1) {
+        alert('حداقل یک محصول باید وجود داشته باشد!');
+        return;
+    }
+    btn.closest('tr').remove();
+    calculateGrandTotal();
+}
+
+// رویدادهای فیلدهای جدید
+document.getElementById('totalDiscountPercent').addEventListener('input', calculateGrandTotal);
+document.getElementById('amountPaid').addEventListener('input', calculateGrandTotal);
+
+// مقداردهی اولیه
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.product-row').forEach(row => {
+        const select = row.querySelector('.product-select');
+        const opt = select.options[select.selectedIndex];
+        if (opt && opt.value) {
+            row.dataset.itemsPerCarton = parseInt(opt.dataset.carton || 1);
+        }
+        attachEvents(row);
+        updateTotalQty(row);
+    });
+    calculateGrandTotal();
+});
+</script>
+{% endblock %}

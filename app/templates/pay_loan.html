@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}پرداخت به طلبکار{% endblock %}
+
+{% block content %}
+<div class="payloan-page-wrapper">
+    <div class="container mt-4 fade-in payloan-container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="payloan-card">
+                    <div class="payloan-card-header">
+                        <h3 class="mb-0 text-center"><i class="fas fa-hand-holding-usd"></i> 💰 پرداخت به طلبکار</h3>
+                    </div>
+                    <div class="payloan-card-body">
+
+                        <!-- نمایش موجودی صندوق -->
+                        <div class="payloan-cash-info mb-4">
+                            <div class="row">
+                                <div class="col-12 text-center">
+                                    <h5>💰 موجودی فعلی صندوق</h5>
+                                    <h2 class="{% if cash_balance|default(0) <= 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ "{:,.0f}".format(cash_balance|default(0)) }} افغانی
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- هشدار موجودی کم -->
+                        {% if cash_balance|default(0) <= 0 %}
+                        <div class="alert alert-danger text-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            ⚠️ موجودی صندوق صفر است! قبل از پرداخت، موجودی را افزایش دهید.
+                        </div>
+                        {% elif cash_balance|default(0) < creditor.current_debt %}
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            ⚠️ موجودی صندوق ({{ "{:,.0f}".format(cash_balance|default(0)) }}) از بدهی جاری ({{ "{:,.0f}".format(creditor.current_debt) }}) کمتر است!
+                        </div>
+                        {% endif %}
+
+                        <!-- اطلاعات طلبکار -->
+                        <div class="payloan-creditor-info mb-4">
+                            <div class="row">
+                                <div class="col-md-7">
+                                    <h4 class="payloan-creditor-name">{{ creditor.name }}</h4>
+                                    <p><i class="fas fa-phone"></i> {{ creditor.phone or '---' }}</p>
+                                </div>
+                                <div class="col-md-5 text-left">
+                                    <p class="mb-1">قرض داری جاری:</p>
+                                    <h3 class="payloan-debt-amount">{{ "{:,.0f}".format(creditor.current_debt) }} افغانی</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <div class="mb-3">
+                                <label class="payloan-label">مبلغ پرداخت (افغانی)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text payloan-input-group">افغانی</span>
+                                    <input type="number" name="amount" class="form-control payloan-input" 
+                                           min="1" max="{{ creditor.current_debt }}" step="0.01" 
+                                           placeholder="مبلغ پرداخت" required
+                                           {% if cash_balance|default(0) <= 0 %}disabled{% endif %}>
+                                </div>
+                                <div class="payloan-hint">حداکثر قابل پرداخت: {{ "{:,.0f}".format(creditor.current_debt) }} افغانی</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="payloan-label">شماره رسید (اختیاری)</label>
+                                <input type="text" name="receipt_number" class="form-control payloan-input" placeholder="شماره رسید">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="payloan-label">روش پرداخت</label>
+                                <select name="payment_method" class="form-control payloan-input">
+                                    <option value="نقدی">نقدی</option>
+                                    <option value="حواله بانکی">حواله بانکی</option>
+                                    <option value="چک">چک</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="payloan-label">توضیحات (اختیاری)</label>
+                                <textarea name="description" class="form-control payloan-input" rows="2" 
+                                          placeholder="توضیحات..."></textarea>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-success flex-grow-1"
+                                        {% if cash_balance|default(0) <= 0 %}disabled{% endif %}>
+                                    <i class="fas fa-check-circle"></i> ثبت پرداخت
+                                </button>
+                                <a href="{{ url_for('main_bp.list_creditors') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> انصراف
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.payloan-page-wrapper { width: 100%; }
+
+.payloan-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 20px;
+    overflow: hidden;
+}
+.payloan-card-header {
+    background: rgba(255, 193, 7, 0.2);
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.payloan-card-header h3 { color: #FFD700; margin: 0; }
+.payloan-card-body { padding: 25px; }
+
+.payloan-cash-info {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+}
+.payloan-cash-info h5 { color: rgba(255, 255, 255, 0.8); margin-bottom: 10px; }
+.payloan-cash-info h2 { margin: 0; font-weight: bold; }
+
+.payloan-creditor-info {
+    background: rgba(102, 126, 234, 0.15);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+}
+.payloan-creditor-name { color: #a78bfa; margin-bottom: 8px; }
+.payloan-debt-amount { color: #f87171; }
+
+.payloan-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.payloan-label::before { content: "◉ "; color: #06b6d4; }
+
+.payloan-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.payloan-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.payloan-input-group {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+}
+.payloan-hint { color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-top: 5px; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+{% endblock %}

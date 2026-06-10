@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}داشبورد گزارشات{% endblock %}
+
+{% block content %}
+<div class="reports-page-wrapper">
+    <div class="container mt-4 fade-in reports-container">
+        <div class="reports-glass-box">
+            <h1 class="reports-title"><i class="fas fa-chart-line"></i> داشبورد گزارشات</h1>
+            <p class="reports-subtitle">گزارش‌ها، موجودی‌ها و عملکرد کسب‌وکار خود را مشاهده کنید</p>
+
+            <div class="reports-grid">
+                <a href="{{ url_for('main_bp.profit_report') }}" class="reports-card">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>گزارش مفاد و ضرر</span>
+                </a>
+                <a href="{{ url_for('main_bp.low_stock_report') }}" class="reports-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>گزارش کمبود موجودی</span>
+                </a>
+                <a href="{{ url_for('main_bp.user_activities_report') }}" class="reports-card">
+                    <i class="fas fa-users"></i>
+                    <span>فعالیت کاربران</span>
+                </a>
+                <a href="{{ url_for('main_bp.product_sales_report') }}" class="reports-card">
+                    <i class="fas fa-boxes"></i>
+                    <span>فروش اجناس</span>
+                </a>
+                <a href="{{ url_for('main_bp.expenses_report') }}" class="reports-card">
+                    <i class="fas fa-receipt"></i>
+                    <span>گزارش مصارف</span>
+                </a>
+                <a href="{{ url_for('main_bp.debt_report') }}" class="reports-card">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <span>گزارش قرض‌ها</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.reports-page-wrapper { width: 100%; min-height: 70vh; display: flex; align-items: center; }
+.reports-glass-box {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+    border-radius: 28px;
+    padding: 40px 30px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+}
+.reports-title { color: #FFD700; font-size: 2rem; margin-bottom: 10px; }
+.reports-subtitle { color: rgba(255, 255, 255, 0.7); margin-bottom: 40px; }
+
+.reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+.reports-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    color: #FFD700;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+.reports-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 215, 0, 0.4);
+}
+.reports-card i { font-size: 32px; }
+.reports-card span { font-weight: 500; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) { .reports-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .reports-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}

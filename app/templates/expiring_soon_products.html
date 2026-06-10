@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}محصولات در حال انقضا{% endblock %}
+
+{% block content %}
+<div class="expiring-page-wrapper">
+    <div class="container mt-4 fade-in expiring-container">
+        <div class="expiring-header mb-4">
+            <h1 class="expiring-title"><i class="fas fa-clock text-warning"></i> محصولات در حال انقضا</h1>
+            <div class="expiring-header-actions">
+                <a href="{{ url_for('main_bp.expired_products') }}" class="btn btn-danger">
+                    <i class="fas fa-exclamation-triangle"></i> منقضی شده
+                </a>
+                <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary">
+                    <i class="fas fa-boxes"></i> همه محصولات
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="expiring-stat-card warning">
+                    <small><i class="fas fa-clock"></i> تعداد محصولات در حال انقضا</small>
+                    <h3>{{ products|length }} محصول</h3>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="expiring-stat-card info">
+                    <small><i class="fas fa-coins"></i> ارزش کل</small>
+                    <h3>{{ "{:,.0f}".format(total_value) }} افغانی</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="expiring-alert mb-4">
+            ⚠️ این محصولات تا تاریخ <strong>{{ soon_date.strftime('%Y-%m-%d') }}</strong> (۳۰ روز آینده) منقضی می‌شوند.
+        </div>
+
+        {% if products %}
+        <div class="expiring-table-container">
+            <div class="expiring-table-header">
+                <h5 class="mb-0"><i class="fas fa-list"></i> لیست محصولات در حال انقضا</h5>
+            </div>
+            <div class="expiring-table-body">
+                <div class="table-responsive">
+                    <table class="expiring-table">
+                        <thead>
+                            <tr>
+                                <th>نام محصول</th>
+                                <th>موجودی</th>
+                                <th>قیمت خرید</th>
+                                <th>ارزش کل</th>
+                                <th>تاریخ انقضا</th>
+                                <th>باقیمانده</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td class="fw-bold">{{ product.name }}{% if product.batch_no %}<br><small class="expiring-batch">بچ: {{ product.batch_no }}</small>{% endif %}</td>
+                                <td>{{ product.quantity }} {{ product.unit }}</td>
+                                <td>{{ "{:,.0f}".format(product.buying_price) }}</td>
+                                <td class="text-warning">{{ "{:,.0f}".format(product.quantity * product.buying_price) }}</td>
+                                <td class="text-warning">{{ product.expiry_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% set days_remaining = (product.expiry_date - today).days %}
+                                    <span class="expiring-badge {% if days_remaining <= 7 %}danger{% elif days_remaining <= 15 %}warning{% else %}info{% endif %}">
+                                        {{ days_remaining }} روز
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="expiring-empty">
+            <i class="fas fa-check-circle fa-4x mb-3"></i>
+            <h3>هیچ محصول در حال انقضایی وجود ندارد</h3>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.expiring-page-wrapper { width: 100%; }
+.expiring-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+.expiring-title { color: #FFD700; margin: 0; }
+.expiring-header-actions { display: flex; gap: 10px; }
+
+.expiring-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.expiring-stat-card.warning { border-top: 4px solid #fbbf24; }
+.expiring-stat-card.info { border-top: 4px solid #22d3ee; }
+.expiring-stat-card small { color: rgba(255, 255, 255, 0.6); display: block; }
+.expiring-stat-card h3 { color: #FFD700; margin: 10px 0 0; }
+
+.expiring-alert {
+    background: rgba(23, 162, 184, 0.15);
+    border: 1px solid rgba(23, 162, 184, 0.3);
+    padding: 12px 20px;
+    border-radius: 12px;
+    color: #22d3ee;
+    text-align: center;
+}
+
+.expiring-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.expiring-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.expiring-table-header h5 { color: #FFD700; margin: 0; }
+.expiring-table-body { padding: 0; overflow-x: auto; }
+
+.expiring-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.expiring-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    font-size: 13px;
+    text-align: center;
+}
+.expiring-table td {
+    padding: 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    text-align: center;
+}
+.expiring-batch { color: rgba(255, 255, 255, 0.5); font-size: 11px; }
+.expiring-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+.expiring-badge.danger { background: rgba(220, 53, 69, 0.2); color: #f87171; }
+.expiring-badge.warning { background: rgba(255, 193, 7, 0.2); color: #fbbf24; }
+.expiring-badge.info { background: rgba(23, 162, 184, 0.2); color: #22d3ee; }
+.expiring-empty {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+}
+.expiring-empty h3 { color: #4ade80; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .expiring-header { flex-direction: column; align-items: flex-start; }
+    .expiring-table th, .expiring-table td { font-size: 10px; padding: 6px; }
+}
+</style>
+{% endblock %}

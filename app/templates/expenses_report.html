@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}گزارش مصارف{% endblock %}
+
+{% block content %}
+<div class="expensesreport-page-wrapper">
+    <div class="container mt-4 fade-in expensesreport-container">
+        <h1 class="text-center mb-4 expensesreport-title">📊 گزارش مصارف</h1>
+
+        <!-- فیلترها -->
+        <div class="expensesreport-filter-card mb-4">
+            <div class="expensesreport-filter-buttons">
+                <a href="?filter=all" class="expensesreport-filter-btn {% if selected_filter == 'all' %}active{% endif %}">تمام مصارف</a>
+                <a href="?filter=today" class="expensesreport-filter-btn {% if selected_filter == 'today' %}active{% endif %}">امروز</a>
+                <a href="?filter=week" class="expensesreport-filter-btn {% if selected_filter == 'week' %}active{% endif %}">این هفته</a>
+                <a href="?filter=month" class="expensesreport-filter-btn {% if selected_filter == 'month' %}active{% endif %}">این ماه</a>
+                <a href="{{ url_for('main_bp.expenses_report_print', filter=selected_filter) }}" target="_blank" class="expensesreport-filter-btn print">
+                    <i class="fas fa-print"></i> 🖨️ نسخه چاپی
+                </a>
+                <a href="{{ url_for('main_bp.list_expenses') }}" class="expensesreport-filter-btn list">
+                    <i class="fas fa-list"></i> 📋 لیست مصارف
+                </a>
+            </div>
+            {% if selected_filter == 'month' %}
+            <div class="expensesreport-month-select mt-3">
+                <select class="form-control expensesreport-select" onchange="window.location.href='?filter=month&month='+this.value">
+                    <option value="">انتخاب ماه</option>
+                    {% for month_num, month_name in months_list %}
+                    <option value="{{ month_num }}" {% if selected_month == month_num %}selected{% endif %}>{{ month_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <div class="expensesreport-date-range text-center mt-3">
+                بازه: {{ start_date.strftime('%Y-%m-%d') if start_date else '---' }} تا {{ end_date.strftime('%Y-%m-%d') if end_date else '---' }}
+            </div>
+        </div>
+
+        <!-- آمار کلی -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="expensesreport-stat-card green">
+                    <i class="fas fa-chart-line"></i>
+                    <small>تعداد مصارف</small>
+                    <h3>{{ expenses|length }}</h3>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="expensesreport-stat-card orange">
+                    <i class="fas fa-coins"></i>
+                    <small>مجموع مصارف</small>
+                    <h3>{{ "{:,.0f}".format(total_expenses) }} افغانی</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول گزارش -->
+        {% if expenses %}
+        <div class="expensesreport-table-container">
+            <div class="expensesreport-table-header">
+                <h5 class="mb-0"><i class="fas fa-table"></i> لیست مصارف</h5>
+                <div class="btn-group">
+                    <a href="{{ url_for('main_bp.export_expenses', filter=selected_filter) }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-file-excel"></i> خروجی Excel
+                    </a>
+                </div>
+            </div>
+            <div class="expensesreport-table-body">
+                <div class="table-responsive">
+                    <table class="expensesreport-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>توضیحات</th>
+                                <th>مبلغ (افغانی)</th>
+                                <th>تاریخ</th>
+                                <th>ثبت شده توسط</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td class="text-right">{{ expense.description }}</td>
+                                <td class="text-danger fw-bold">{{ "{:,.0f}".format(expense.amount) }}</td>
+                                <td>{{ expense.date|persian_datetime }}</td>
+                                <td><span class="expensesreport-user">👤 {{ expense.user.full_name if expense.user else 'سیستم' }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="2" class="text-left fw-bold">جمع کل:</td>
+                                <td class="text-danger fw-bold">{{ "{:,.0f}".format(total_expenses) }} افغانی</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="expensesreport-empty">
+            <i class="fas fa-chart-line fa-4x mb-3"></i>
+            <h3>📝 هیچ مصرفی برای نمایش وجود ندارد</h3>
+            <p>برای دوره انتخاب شده هیچ مصرفی ثبت نشده است</p>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.expensesreport-page-wrapper { width: 100%; }
+.expensesreport-title { color: #FFD700; }
+
+.expensesreport-filter-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+}
+.expensesreport-filter-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.expensesreport-filter-btn {
+    padding: 6px 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.expensesreport-filter-btn:hover, .expensesreport-filter-btn.active {
+    background: rgba(59, 130, 246, 0.3);
+    color: #FFD700;
+}
+.expensesreport-filter-btn.print { background: rgba(255, 193, 7, 0.2); }
+.expensesreport-filter-btn.list { background: rgba(23, 162, 184, 0.2); }
+.expensesreport-select {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+    border-radius: 10px;
+    padding: 8px;
+}
+.expensesreport-date-range { color: rgba(255, 255, 255, 0.6); font-size: 13px; }
+
+.expensesreport-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.expensesreport-stat-card.green { border-top: 4px solid #4ade80; }
+.expensesreport-stat-card.orange { border-top: 4px solid #fbbf24; }
+.expensesreport-stat-card i { font-size: 28px; color: rgba(255, 215, 0, 0.6); }
+.expensesreport-stat-card small { color: rgba(255, 255, 255, 0.6); display: block; margin-top: 10px; }
+.expensesreport-stat-card h3 { color: #FFD700; margin: 8px 0 0; }
+
+.expensesreport-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.expensesreport-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.expensesreport-table-header h5 { color: #FFD700; margin: 0; }
+.expensesreport-table-body { padding: 0; overflow-x: auto; }
+
+.expensesreport-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.expensesreport-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    font-size: 13px;
+    text-align: center;
+}
+.expensesreport-table td {
+    padding: 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    text-align: center;
+}
+.expensesreport-user {
+    background: rgba(102, 126, 234, 0.2);
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+}
+.expensesreport-empty {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+}
+.expensesreport-empty h3 { color: #FFD700; }
+.expensesreport-empty p { color: rgba(255, 255, 255, 0.6); }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .expensesreport-filter-buttons { flex-wrap: wrap; }
+    .expensesreport-table th, .expensesreport-table td { font-size: 11px; padding: 6px; }
+}
+</style>
+{% endblock %}

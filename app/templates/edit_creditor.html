@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}ویرایش طلبکار{% endblock %}
+
+{% block content %}
+<div class="editcreditor-page-wrapper">
+    <div class="container mt-4 fade-in editcreditor-container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="editcreditor-card">
+                    <div class="editcreditor-card-header">
+                        <h3 class="mb-0 text-center"><i class="fas fa-user-edit"></i> ✏️ ویرایش طلبکار</h3>
+                    </div>
+                    <div class="editcreditor-card-body">
+
+                        <div class="editcreditor-info mb-4">
+                            <h5>اطلاعات فعلی</h5>
+                            <div class="row">
+                                <div class="col-md-6"><span>نام:</span> {{ creditor.name }}</div>
+                                <div class="col-md-6"><span>شماره تماس:</span> {{ creditor.phone or '---' }}</div>
+                                <div class="col-md-6"><span>قرض داری جاری:</span> <span class="text-danger">{{ "{:,.0f}".format(creditor.current_debt) }} افغانی</span></div>
+                                <div class="col-md-6"><span>تاریخ ثبت:</span> {{ creditor.created_at|persian_date }}</div>
+                            </div>
+                        </div>
+
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+
+                            <div class="mb-3">
+                                <label class="editcreditor-label">{{ form.name.label }}</label>
+                                {{ form.name(class="form-control editcreditor-input") }}
+                                {% if form.name.errors %}<div class="text-danger">{{ form.name.errors[0] }}</div>{% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="editcreditor-label">{{ form.phone.label }}</label>
+                                {{ form.phone(class="form-control editcreditor-input") }}
+                                {% if form.phone.errors %}<div class="text-danger">{{ form.phone.errors[0] }}</div>{% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="editcreditor-label">{{ form.address.label }}</label>
+                                {{ form.address(class="form-control editcreditor-input", rows=3) }}
+                            </div>
+
+                            {% if form.initial_debt %}
+                            <div class="mb-3">
+                                <label class="editcreditor-label">{{ form.initial_debt.label }}</label>
+                                {{ form.initial_debt(class="form-control editcreditor-input") }}
+                                <small class="editcreditor-hint">قرض داری اولیه (برای تغییر)</small>
+                            </div>
+                            {% endif %}
+
+                            {% if form.debt_description %}
+                            <div class="mb-3">
+                                <label class="editcreditor-label">{{ form.debt_description.label }}</label>
+                                {{ form.debt_description(class="form-control editcreditor-input", rows=2) }}
+                            </div>
+                            {% endif %}
+
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-success flex-grow-1">
+                                    <i class="fas fa-save"></i> ذخیره تغییرات
+                                </button>
+                                <a href="{{ url_for('main_bp.list_creditors') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> انصراف
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.editcreditor-page-wrapper { width: 100%; }
+
+.editcreditor-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.editcreditor-card-header {
+    background: rgba(255, 193, 7, 0.2);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.editcreditor-card-header h3 { color: #FFD700; margin: 0; }
+.editcreditor-card-body { padding: 25px; }
+
+.editcreditor-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+}
+.editcreditor-info h5 { color: #FFD700; margin-bottom: 12px; }
+.editcreditor-info span { color: rgba(255, 255, 255, 0.6); margin-left: 5px; }
+
+.editcreditor-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.editcreditor-label::before { content: "◉ "; color: #06b6d4; }
+
+.editcreditor-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+.editcreditor-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.editcreditor-hint { color: rgba(255, 255, 255, 0.5); font-size: 11px; display: block; margin-top: 5px; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}ثبت استاک‌اوت{% endblock %}
+
+{% block content %}
+<div class="writeoff-page-wrapper">
+    <div class="container mt-4 fade-in writeoff-container">
+        <div class="row">
+            <!-- فرم ثبت -->
+            <div class="col-md-5 mb-4">
+                <div class="writeoff-card">
+                    <div class="writeoff-card-header danger">
+                        <h4 class="mb-0"><i class="fas fa-skull-crossbones"></i> ثبت استاک‌اوت جدید</h4>
+                    </div>
+                    <div class="writeoff-card-body">
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="writeoff-label">{{ form.product_id.label }}</label>
+                                    {{ form.product_id(class="form-control writeoff-input") }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="writeoff-label">{{ form.quantity.label }}</label>
+                                    {{ form.quantity(class="form-control writeoff-input", placeholder="مثلاً: 10") }}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="writeoff-label">{{ form.reason.label }}</label>
+                                {{ form.reason(class="form-control writeoff-input") }}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="writeoff-label">{{ form.description.label }}</label>
+                                {{ form.description(class="form-control writeoff-input", rows="3", placeholder="توضیحات کامل دلیل استاک‌اوت...") }}
+                            </div>
+
+                            <div class="writeoff-alert">
+                                <strong>توجه:</strong>
+                                <ul class="mb-0">
+                                    <li>این عملیات غیرقابل بازگشت است</li>
+                                    <li>موجودی کسر می‌شود</li>
+                                    <li>ضرر مالی ثبت می‌گردد</li>
+                                </ul>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4">
+                                <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary flex-grow-1">
+                                    <i class="fas fa-times"></i> بازگشت
+                                </a>
+                                {{ form.submit(class="btn btn-danger flex-grow-1") }}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تاریخچه -->
+            <div class="col-md-7 mb-4">
+                <div class="writeoff-card">
+                    <div class="writeoff-card-header info">
+                        <h4 class="mb-0"><i class="fas fa-history"></i> تاریخچه استاک‌اوت‌ها</h4>
+                    </div>
+                    <div class="writeoff-card-body">
+                        {% if write_offs %}
+                        <div class="table-responsive">
+                            <table class="writeoff-table">
+                                <thead>
+                                    <tr>
+                                        <th>تاریخ</th>
+                                        <th>محصول</th>
+                                        <th>تعداد</th>
+                                        <th>دلیل</th>
+                                        <th>توضیحات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for wo in write_offs %}
+                                    <tr>
+                                        <td>{{ wo.date.strftime('%Y-%m-%d %H:%M') if wo.date else '' }}</td>
+                                        <td>{{ wo.product.name if wo.product else 'حذف شده' }}</td>
+                                        <td><span class="writeoff-badge danger">{{ wo.quantity }}</span></td>
+                                        <td><span class="writeoff-badge warning">{{ wo.reason }}</span></td>
+                                        <td>{{ wo.description[:50] }}{% if wo.description|length > 50 %}...{% endif %}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="writeoff-empty">
+                            <i class="fas fa-inbox fa-3x mb-2"></i>
+                            <p>هیچ استاک‌اوتی ثبت نشده است</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-2">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.writeoff-page-wrapper { width: 100%; }
+
+.writeoff-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+    height: 100%;
+}
+.writeoff-card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.writeoff-card-header.danger { background: rgba(220, 53, 69, 0.2); }
+.writeoff-card-header.info { background: rgba(23, 162, 184, 0.2); }
+.writeoff-card-header h4 { color: #FFD700; margin: 0; }
+.writeoff-card-body { padding: 20px; }
+
+.writeoff-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.writeoff-label::before { content: "◉ "; color: #06b6d4; }
+
+.writeoff-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+.writeoff-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.writeoff-input option { background: #1a1a2e; color: #FFD700; }
+
+.writeoff-alert {
+    background: rgba(241, 196, 15, 0.15);
+    border: 1px solid rgba(241, 196, 15, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    color: #fbbf24;
+    font-size: 13px;
+}
+.writeoff-alert ul { padding-right: 20px; margin-top: 8px; }
+
+.writeoff-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.writeoff-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 10px;
+    font-size: 12px;
+    text-align: center;
+}
+.writeoff-table td {
+    padding: 8px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    text-align: center;
+    font-size: 12px;
+}
+.writeoff-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 11px;
+}
+.writeoff-badge.danger { background: rgba(220, 53, 69, 0.2); color: #f87171; }
+.writeoff-badge.warning { background: rgba(255, 193, 7, 0.2); color: #fbbf24; }
+.writeoff-empty { text-align: center; padding: 30px; color: rgba(255, 255, 255, 0.5); }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .writeoff-card-body { padding: 15px; }
+    .writeoff-table th, .writeoff-table td { font-size: 10px; padding: 5px; }
+}
+</style>
+{% endblock %}

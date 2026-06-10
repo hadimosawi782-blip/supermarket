@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="glass-card" style="max-width:600px;margin:auto">
+
+    <h2 class="text-center mb-4">➕ ثبت طلبکار جدید</h2>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            {{ form.name.label }}
+            {{ form.name(class="form-control", placeholder="نام طلبکار") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.phone.label }}
+            {{ form.phone(class="form-control", placeholder="شماره تماس") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.address.label }}
+            {{ form.address(class="form-control", placeholder="آدرس (اختیاری)") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.initial_debt.label }}
+            {{ form.initial_debt(class="form-control", placeholder="مبلغ طلب اولیه") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.debt_description.label }}
+            {{ form.debt_description(
+                class="form-control",
+                rows="3",
+                placeholder="توضیح طلب..."
+            ) }}
+        </div>
+
+        <div class="d-flex gap-3 justify-content-center mt-4">
+            <button type="submit" class="glass-btn glass-btn-success">
+                💾 ثبت
+            </button>
+            <a href="{{ url_for('main_bp.list_creditors') }}"
+               class="glass-btn glass-btn-secondary">
+                ↩ بازگشت
+            </a>
+        </div>
+    </form>
+
+</section>
+
+{% endblock %}

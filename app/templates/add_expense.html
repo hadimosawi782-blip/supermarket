@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}ثبت مصرف{% endblock %}
+
+{% block content %}
+
+<div class="products-page-wrapper">
+<div class="container mt-4">
+
+<div class="products-card mx-auto" style="max-width:650px">
+
+<div class="products-card-header">
+
+<h3 class="text-center">
+💰 ثبت مصرف جدید
+</h3>
+
+</div>
+
+<div class="products-card-body">
+
+<form method="POST">
+
+<input type="hidden"
+name="csrf_token"
+value="{{ csrf_token() }}">
+
+<div class="mb-3">
+
+<label class="form-label text-warning">
+توضیحات
+</label>
+
+<input
+type="text"
+name="description"
+class="form-control products-input"
+placeholder="مثال: خرید لوازم التحریر"
+required>
+
+</div>
+
+<div class="mb-3">
+
+<label class="form-label text-warning">
+مبلغ (افغانی)
+</label>
+
+<input
+type="number"
+name="amount"
+step="0.01"
+class="form-control products-input"
+placeholder="0.00"
+required>
+
+</div>
+
+<div class="mb-3">
+
+<label class="form-label text-warning">
+دسته‌بندی
+</label>
+
+<select name="category" class="form-control products-input" required>
+    <option value="">انتخاب دسته‌بندی...</option>
+    <option value="خوراک">🍔 خوراک</option>
+    <option value="نوشیدنی">🥤 نوشیدنی</option>
+    <option value="بهداشتی">🧼 بهداشتی</option>
+    <option value="لوازم التحریر">📝 لوازم التحریر</option>
+    <option value="برق">⚡ برق</option>
+    <option value="آب">💧 آب</option>
+    <option value="گاز">🔥 گاز</option>
+    <option value="تلفن">📞 تلفن / اینترنت</option>
+    <option value="اجاره">🏠 اجاره</option>
+    <option value="حقوق">👥 حقوق کارکنان</option>
+    <option value="حمل و نقل">🚚 حمل و نقل</option>
+    <option value="تعمیرات">🔧 تعمیرات</option>
+    <option value="تبلیغات">📢 تبلیغات</option>
+    <option value="سایر">📦 سایر</option>
+</select>
+
+</div>
+
+<div class="mb-3">
+
+<label class="form-label text-warning">
+تاریخ (شمسی)
+</label>
+
+<input
+type="text"
+name="date"
+id="jalaliDate"
+class="form-control products-input"
+placeholder="مثال: 1403/01/15"
+value="{{ today_jalali }}"
+required>
+
+<small class="form-hint text-muted">فرمت: سال/ماه/روز (مثال: 1403/01/15)</small>
+
+</div>
+
+<div class="d-flex gap-2">
+
+<button
+type="submit"
+class="btn btn-success flex-grow-1">
+
+<i class="fas fa-save"></i>
+ثبت مصرف
+
+</button>
+
+<a
+href="{{ url_for('main_bp.list_expenses') }}"
+class="btn btn-secondary"
+title="انصراف">
+
+<i class="fas fa-times"></i>
+
+</a>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+<style>
+.products-page-wrapper {
+    width: 100%;
+}
+.products-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.products-card-header {
+    background: rgba(6, 182, 212, 0.25);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.products-card-header h3 {
+    color: #FFD700;
+    margin: 0;
+}
+.products-card-body {
+    padding: 25px;
+}
+.products-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+    width: 100%;
+}
+.products-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+}
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.form-label::before {
+    content: "◉ ";
+    color: #06b6d4;
+}
+.form-hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+
+<script>
+// تنظیم تاریخ شمسی امروز
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new persianDate();
+    const todayFormatted = today.format('YYYY/MM/DD');
+    const dateInput = document.getElementById('jalaliDate');
+    
+    // اگر مقدار پیش‌فرض وجود نداشت، امروز را تنظیم کن
+    if (dateInput && !dateInput.value) {
+        dateInput.value = todayFormatted;
+    }
+});
+</script>
+
+{% endblock %}

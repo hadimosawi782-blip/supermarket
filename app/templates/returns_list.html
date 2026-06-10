@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}لیست واپسی‌ها{% endblock %}
+
+{% block content %}
+<div class="returns-list-page-wrapper">
+    <div class="container mt-4 fade-in returns-list-container">
+        <h1 class="text-center mb-4 returns-list-title">🔄 لیست واپسی‌ها</h1>
+
+        <!-- دکمه ثبت واپسی جدید -->
+        <div class="text-center mb-4">
+            <a href="{{ url_for('main_bp.returns') }}" class="btn btn-warning btn-lg">
+                <i class="fas fa-plus-circle"></i> ثبت واپسی جدید
+            </a>
+        </div>
+
+        <!-- آمار -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4 col-6">
+                <div class="returns-stat-card">
+                    <div class="returns-stat-icon bg-info">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <div class="returns-stat-details">
+                        <small class="stat-label">تعداد واپسی‌ها</small>
+                        <div class="stat-number">{{ returns|length }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="returns-stat-card">
+                    <div class="returns-stat-icon bg-success">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="returns-stat-details">
+                        <small class="stat-label">تعداد اقلام واپسی</small>
+                        <div class="stat-number">{{ total_items }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="returns-stat-card">
+                    <div class="returns-stat-icon bg-danger">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="returns-stat-details">
+                        <small class="stat-label">مبلغ کل بازگشتی</small>
+                        <div class="stat-number">{{ "{:,.0f}".format(total_refund) }} <small>افغانی</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if returns %}
+        <div class="returns-table-container">
+            <div class="returns-table-header">
+                <h5 class="mb-0"><i class="fas fa-list"></i> لیست واپسی‌ها</h5>
+            </div>
+            <div class="returns-table-body">
+                <div class="table-responsive">
+                    <table class="returns-table">
+                        <thead>
+                            <tr>
+                                <th>شناسه</th>
+                                <th>تاریخ</th>
+                                <th>شماره فاکتور</th>
+                                <th>مشتری</th>
+                                <th>محصول</th>
+                                <th>تعداد</th>
+                                <th>مبلغ بازگشتی</th>
+                                <th>دلیل</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in returns %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.return_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if item.sale %}
+                                        <a href="{{ url_for('main_bp.list_sales') }}?search={{ item.sale.invoice_number }}" 
+                                           class="btn-return-invoice">
+                                            <i class="fas fa-receipt"></i> فاکتور {{ item.sale.invoice_number }}
+                                        </a>
+                                        {% if item.sale.final_amount != item.sale.total_amount %}
+                                        <span class="badge bg-warning ms-1" title="فاکتور به‌روز شده است">به‌روز شده</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">---</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.customer.name if item.customer else '---' }}</td>
+                                <td>{{ item.product.name if item.product else '---' }}</td>
+                                <td>{{ item.quantity }} عدد</td>
+                                <td class="text-danger returns-amount">{{ "{:,.0f}".format(item.refund_amount) }} افغانی</td>
+                                <td>
+                                    <span class="badge {% if item.reason == 'معیوب' %}bg-danger{% elif item.reason == 'تاریخ گذشته' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ item.reason }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('main_bp.delete_return', id=item.id) }}" method="POST" style="display: inline-block;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn-return-delete" onclick="return confirm('آیا از حذف این واپسی اطمینان دارید؟')" title="حذف">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="5" class="text-end">جمع کل:</th>
+                                <th>{{ total_items }}</th>
+                                <th>{{ "{:,.0f}".format(total_refund) }} افغانی</th>
+                                <th colspan="2"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="returns-empty-state">
+            <i class="fas fa-undo-alt fa-4x mb-3"></i>
+            <h3>🔄 هیچ واپسی ثبت نشده است</h3>
+            <p class="mt-2">برای ثبت واپسی جدید، روی دکمه زیر کلیک کنید</p>
+            <a href="{{ url_for('main_bp.returns') }}" class="btn btn-warning mt-3">
+                <i class="fas fa-plus-circle"></i> ثبت واپسی جدید
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- دکمه بازگشت -->
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.list_sales') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> ↩️ بازگشت به لیست فروش‌ها
+            </a>
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.returns-list-page-wrapper { width: 100%; }
+
+.returns-list-title { color: #FFD700; margin-bottom: 30px; font-weight: bold; }
+
+/* کارت‌های آمار */
+.returns-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.returns-stat-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #FFD700;
+}
+
+.returns-stat-icon {
+    width: 55px;
+    height: 55px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.returns-stat-icon.bg-info { background: linear-gradient(135deg, #0d6efd, #0b5ed7); }
+.returns-stat-icon.bg-success { background: linear-gradient(135deg, #198754, #157347); }
+.returns-stat-icon.bg-danger { background: linear-gradient(135deg, #dc3545, #bb2d3b); }
+
+.returns-stat-details .stat-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    display: block;
+}
+
+.returns-stat-details .stat-number {
+    font-size: 20px;
+    font-weight: bold;
+    color: #FFD700;
+}
+
+/* جدول */
+.returns-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.returns-table-header {
+    background: rgba(0, 0, 0, 0.35);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.returns-table-header h5 { color: #FFD700; margin: 0; }
+
+.returns-table-body { padding: 0; overflow-x: auto; }
+
+.returns-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.returns-table thead th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 14px 10px;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.returns-table tbody tr {
+    border-bottom: 1px solid rgba(255, 215, 0, 0.08);
+    transition: all 0.2s ease;
+}
+
+.returns-table tbody tr:hover { background: rgba(59, 130, 246, 0.15); }
+
+.returns-table tbody td {
+    padding: 12px 10px;
+    color: #e2e8f0;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.returns-table tfoot th {
+    background: rgba(0, 0, 0, 0.5);
+    color: #FFD700;
+    padding: 12px;
+    font-weight: bold;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.returns-amount { font-weight: bold; }
+
+/* دکمه فاکتور */
+.btn-return-invoice {
+    background: rgba(13, 110, 253, 0.2);
+    border: 1px solid #0d6efd;
+    color: #0d6efd;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.btn-return-invoice:hover {
+    background: #0d6efd;
+    color: white;
+}
+
+/* دکمه حذف */
+.btn-return-delete {
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-return-delete:hover {
+    background: #dc3545;
+    color: white;
+}
+
+/* حالت خالی */
+.returns-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+}
+
+.returns-empty-state i { color: rgba(255, 215, 0, 0.5); }
+.returns-empty-state h3 { color: #FFD700; }
+
+/* انیمیشن */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .returns-table thead th, .returns-table tbody td { font-size: 11px; padding: 8px 6px; }
+    .returns-stat-card { padding: 10px 15px; }
+    .returns-stat-icon { width: 45px; height: 45px; font-size: 20px; }
+    .returns-stat-details .stat-number { font-size: 16px; }
+}
+
+/* پرینت */
+@media print {
+    .btn, .btn-return-delete, .btn-return-invoice, .returns-table-header, .returns-empty-state .btn {
+        display: none !important;
+    }
+    .returns-table-container {
+        background: white !important;
+        border: 1px solid #ddd !important;
+    }
+    .returns-table thead th { background: #f8f9fa !important; color: black !important; }
+    .returns-table tbody td { color: black !important; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}بل فروش - {{ sale.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="invoice-page-wrapper">
+    <div class="container mt-4 fade-in invoice-container">
+        <!-- هدر بل -->
+        <div class="text-center mb-4">
+            <h1 class="invoice-title">🧾 بل فروش</h1>
+            <p class="invoice-subtitle">شماره بل: <strong class="text-info">{{ sale.invoice_number }}</strong></p>
+        </div>
+
+        <!-- ردیف اطلاعات اصلی -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="invoice-card h-100">
+                    <div class="invoice-card-header primary">
+                        <h5 class="mb-0">📅 اطلاعات فروش</h5>
+                    </div>
+                    <div class="invoice-card-body">
+                        <div class="info-row"><span class="info-label">تاریخ ثبت:</span><span class="info-value">{{ sale.date|persian_datetime }}</span></div>
+                        <div class="info-row"><span class="info-label">شماره بل:</span><span class="info-value"><span class="badge bg-info">{{ sale.invoice_number }}</span></span></div>
+                        <div class="info-row"><span class="info-label">نوع پرداخت:</span><span class="info-value">{% if sale.remaining_debt|default(0) > 0 %}<span class="badge bg-warning">نسیه</span>{% else %}<span class="badge bg-success">نقدی</span>{% endif %}</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="invoice-card h-100">
+                    <div class="invoice-card-header info">
+                        <h5 class="mb-0">👤 اطلاعات مشتری</h5>
+                    </div>
+                    <div class="invoice-card-body">
+                        {% if sale.customer %}
+                        <div class="info-row"><span class="info-label">نام مشتری:</span><span class="info-value">{{ sale.customer.name }}</span></div>
+                        <div class="info-row"><span class="info-label">شماره تماس:</span><span class="info-value">{{ sale.customer.phone or 'ثبت نشده' }}</span></div>
+                        {% if sale.customer.address %}<div class="info-row"><span class="info-label">آدرس:</span><span class="info-value">{{ sale.customer.address }}</span></div>{% endif %}
+                        {% else %}<div class="info-row"><span class="info-label">نوع مشتری:</span><span class="info-value"><span class="badge bg-secondary">مشتری عمومی</span></span></div>{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- لیست محصولات -->
+        <div class="invoice-card mb-4">
+            <div class="invoice-card-header success">
+                <h5 class="mb-0">📦 محصولات فروش رفته</h5>
+            </div>
+            <div class="invoice-card-body p-0">
+                <div class="table-responsive">
+                    <table class="invoice-table">
+                        <thead><tr><th>#</th><th>نام محصول</th><th>تعداد</th><th>قیمت واحد</th><th>تخفیف</th><th>مبلغ نهایی</th></tr></thead>
+                        <tbody>
+                            {% for item in sale.items %}
+                            <tr>
+                                <td class="text-center">{{ loop.index }}</td>
+                                <td class="fw-bold">{% if item.product %}{{ item.product.name }}{% elif item.foreign_name %}{{ item.foreign_name }} <span class="badge bg-info">خارجی</span>{% else %}محصول نامشخص{% endif %}</td>
+                                <td class="text-center">{% if item.product %}{{ item.quantity }} {{ item.product.unit }}{% elif item.foreign_unit %}{{ item.quantity }} {{ item.foreign_unit }}{% else %}{{ item.quantity }} عدد{% endif %}</td>
+                                <td class="text-center text-success">{{ "{:,.0f}".format(item.selling_price|default(0)) }} <small>افغانی</small></td>
+                                <td class="text-center text-warning">{% if item.discount_percent|default(0) > 0 %}{{ item.discount_percent }}% ({{ "{:,.0f}".format(item.discount_amount|default(0)) }}){% else %}-{% endif %}</td>
+                                <td class="text-center text-info fw-bold">{{ "{:,.0f}".format(item.final_amount|default(0)) }} <small>افغانی</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot><tr><td colspan="5" class="text-left fw-bold">جمع کل:</td><td class="text-center fw-bold text-success fs-5">{{ "{:,.0f}".format(sale.total_amount|default(0)) }} <small>افغانی</small></td></tr></tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- خلاصه مالی -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="row g-3">
+                    <div class="col-md-3 col-6"><div class="invoice-stat-card primary"><small>💰 مبلغ کل</small><span>{{ "{:,.0f}".format(sale.total_amount|default(0)) }}</span><small>افغانی</small></div></div>
+                    <div class="col-md-3 col-6"><div class="invoice-stat-card warning"><small>💸 تخفیف کل</small><span>{{ "{:,.0f}".format(sale.total_discount|default(0)) }}</span><small>افغانی</small></div></div>
+                    <div class="col-md-3 col-6"><div class="invoice-stat-card success"><small>💳 پرداخت شده</small><span>{{ "{:,.0f}".format(sale.amount_paid|default(0)) }}</span><small>افغانی</small></div></div>
+                    <div class="col-md-3 col-6"><div class="invoice-stat-card {% if sale.remaining_debt|default(0) > 0 %}danger{% else %}success{% endif %}"><small>📊 باقی مانده</small><span>{{ "{:,.0f}".format(sale.remaining_debt|default(0)) }}</span><small>افغانی</small></div></div>
+                </div>
+            </div>
+            <div class="col-md-4 mt-3 mt-md-0">
+                <div class="invoice-card">
+                    <div class="invoice-card-header secondary"><h5 class="mb-0">📝 وضعیت نهایی</h5></div>
+                    <div class="invoice-card-body">
+                        <div class="info-row"><span class="info-label">وضعیت پرداخت:</span><span class="info-value">{% if sale.remaining_debt|default(0) > 0 %}<span class="badge bg-danger">📉 نسیه</span>{% else %}<span class="badge bg-success">✅ نقدی</span>{% endif %}</span></div>
+                        <div class="info-row"><span class="info-label">درصد پرداخت:</span><span class="info-value">{% if sale.total_amount|default(0) > 0 %}{% set paid_percent = (sale.amount_paid|default(0) / sale.total_amount * 100)|round(1) %}<span class="badge {% if paid_percent == 100 %}bg-success{% elif paid_percent >= 50 %}bg-warning{% else %}bg-danger{% endif %}">{{ paid_percent }}%</span>{% else %}<span class="badge bg-secondary">0%</span>{% endif %}</span></div>
+                        <div class="info-row"><span class="info-label">تعداد اقلام:</span><span class="info-value"><span class="badge bg-info">{{ sale.items|length }} قلم</span></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.list_sales') }}" class="btn btn-secondary m-1"><i class="fas fa-list"></i> بازگشت به لیست</a>
+            <a href="{{ url_for('main_bp.add_sale') }}" class="btn btn-success m-1"><i class="fas fa-plus"></i> فروش جدید</a>
+            <button onclick="window.print()" class="btn btn-info m-1"><i class="fas fa-print"></i> چاپ بل</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.invoice-page-wrapper { width: 100%; }
+.invoice-title { color: #FFD700; font-size: 28px; margin-bottom: 5px; }
+.invoice-subtitle { color: rgba(255, 255, 255, 0.7); }
+
+.invoice-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.invoice-card-header { padding: 12px 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.1); }
+.invoice-card-header.primary { background: rgba(59, 130, 246, 0.2); }
+.invoice-card-header.info { background: rgba(6, 182, 212, 0.2); }
+.invoice-card-header.success { background: rgba(16, 185, 129, 0.2); }
+.invoice-card-header.secondary { background: rgba(100, 116, 139, 0.2); }
+.invoice-card-header h5 { color: #FFD700; margin: 0; }
+.invoice-card-body { padding: 20px; }
+
+.invoice-stat-card { text-align: center; padding: 15px; background: rgba(255, 255, 255, 0.06); border-radius: 12px; }
+.invoice-stat-card.primary { border-top: 3px solid #22d3ee; }
+.invoice-stat-card.warning { border-top: 3px solid #fbbf24; }
+.invoice-stat-card.success { border-top: 3px solid #4ade80; }
+.invoice-stat-card.danger { border-top: 3px solid #f87171; }
+.invoice-stat-card small { color: rgba(255, 255, 255, 0.6); display: block; }
+.invoice-stat-card span { color: #FFD700; font-size: 18px; font-weight: bold; display: block; margin: 8px 0; }
+
+.invoice-table { width: 100%; border-collapse: collapse; }
+.invoice-table th { background: rgba(0, 0, 0, 0.4); color: #FFD700; padding: 12px; font-size: 13px; text-align: center; }
+.invoice-table td { padding: 10px; color: #e2e8f0; border-bottom: 1px solid rgba(255, 215, 0, 0.1); text-align: center; }
+.invoice-table tfoot tr { background: rgba(0, 0, 0, 0.3); border-top: 2px solid rgba(59, 130, 246, 0.3); }
+
+.info-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: rgba(255, 255, 255, 0.7); font-size: 14px; }
+.info-value { color: #fff; font-weight: 600; font-size: 14px; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .invoice-title { font-size: 22px; }
+    .invoice-table th, .invoice-table td { font-size: 11px; padding: 6px; }
+    .info-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+}
+@media print { .btn, .text-center .btn { display: none !important; } }
+</style>
+{% endblock %}

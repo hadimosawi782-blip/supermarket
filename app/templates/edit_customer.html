@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}ویرایش مشتری - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="editcustomer-page-wrapper">
+    <div class="container mt-4 fade-in editcustomer-container">
+        <h1 class="text-center mb-4 editcustomer-title">✏️ ویرایش مشتری: {{ customer.name }}</h1>
+
+        <!-- آمار مشتری -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="editcustomer-stat-card info">
+                    <small>👤 وضعیت</small>
+                    <h4>{% if customer.total_debt > 0 %}قرض‌دار{% else %}بدون قرض{% endif %}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="editcustomer-stat-card warning">
+                    <small>💰 کل قرض داری</small>
+                    <h4>{{ "{:,.0f}".format(customer.total_debt or 0) }} افغانی</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="editcustomer-stat-card purple">
+                    <small>📞 شماره تماس</small>
+                    <h4>{{ customer.phone or 'ثبت نشده' }}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="editcustomer-stat-card secondary">
+                    <small>📅 آخرین خرید</small>
+                    <h4>{{ customer.last_purchase_date.strftime('%Y-%m-%d') if customer.last_purchase_date else 'ندارد' }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- فرم ویرایش -->
+        <div class="editcustomer-card">
+            <div class="editcustomer-card-header">
+                <h5 class="mb-0"><i class="fas fa-edit"></i> ویرایش اطلاعات مشتری</h5>
+            </div>
+            <div class="editcustomer-card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="editcustomer-label">{{ form.name.label }} <span class="text-danger">*</span></label>
+                            {{ form.name(class="form-control editcustomer-input", placeholder="نام کامل مشتری") }}
+                            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors[0] }}</div>{% endif %}
+                            <small class="editcustomer-hint">نام و تخلص مشتری را وارد کنید</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="editcustomer-label">{{ form.phone.label }}</label>
+                            {{ form.phone(class="form-control editcustomer-input", placeholder="مثال: ۰۷۹۰۰۰۰۰۰۰") }}
+                            <small class="editcustomer-hint">شماره تماس معتبر وارد کنید</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="editcustomer-label">{{ form.address.label }}</label>
+                            {{ form.address(class="form-control editcustomer-input", rows="3", placeholder="آدرس دقیق مشتری...") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="editcustomer-label">{{ form.total_debt.label }}</label>
+                            <div class="input-group">
+                                {{ form.total_debt(class="form-control editcustomer-input", placeholder="۰") }}
+                                <span class="input-group-text editcustomer-input-group">افغانی</span>
+                            </div>
+                            <div class="editcustomer-debt-status mt-2">
+                                {% if customer.total_debt > 0 %}
+                                <span class="text-danger">⚠️ مشتری {{ "{:,.0f}".format(customer.total_debt) }} افغانی قرض دارد</span>
+                                {% else %}
+                                <span class="text-success">✅ مشتری بدون قرض است</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="editcustomer-note mt-4">
+                        <i class="fas fa-info-circle"></i> ℹ️ تغییر مبلغ قرض بر موجودی نقدی تأثیری ندارد.
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-success flex-grow-1">
+                            <i class="fas fa-save"></i> 💾 ذخیره تغییرات
+                        </button>
+                        <a href="{{ url_for('main_bp.customer_detail', customer_id=customer.id) }}" class="btn btn-info">
+                            <i class="fas fa-eye"></i> مشاهده جزئیات
+                        </a>
+                        <a href="{{ url_for('main_bp.list_customers') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> انصراف
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.list_customers') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> بازگشت به لیست مشتریان
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.editcustomer-page-wrapper { width: 100%; }
+.editcustomer-title { color: #FFD700; }
+
+.editcustomer-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.editcustomer-stat-card.info { border-top: 4px solid #22d3ee; }
+.editcustomer-stat-card.warning { border-top: 4px solid #fbbf24; }
+.editcustomer-stat-card.purple { border-top: 4px solid #a78bfa; }
+.editcustomer-stat-card.secondary { border-top: 4px solid #94a3b8; }
+.editcustomer-stat-card small { color: rgba(255, 255, 255, 0.6); }
+.editcustomer-stat-card h4 { color: #FFD700; margin: 8px 0 0; font-size: 16px; }
+
+.editcustomer-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.editcustomer-card-header {
+    background: rgba(6, 182, 212, 0.2);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.editcustomer-card-header h5 { color: #FFD700; margin: 0; }
+.editcustomer-card-body { padding: 25px; }
+
+.editcustomer-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.editcustomer-label::before { content: "◉ "; color: #06b6d4; }
+
+.editcustomer-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.editcustomer-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.editcustomer-input-group {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+}
+
+.editcustomer-hint { color: rgba(255, 255, 255, 0.5); font-size: 11px; display: block; margin-top: 5px; }
+.editcustomer-debt-status { font-size: 12px; }
+
+.editcustomer-note {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(23, 162, 184, 0.1);
+    border: 1px solid rgba(23, 162, 184, 0.2);
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .editcustomer-card-body { padding: 15px; }
+}
+</style>
+{% endblock %}

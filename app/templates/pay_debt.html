@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}ثبت پرداخت قرض - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="paydebt-page-wrapper">
+    <div class="container mt-4 fade-in paydebt-container">
+        <h1 class="text-center mb-4 paydebt-title">💰 ثبت پرداخت قرض داری</h1>
+        <p class="text-center paydebt-subtitle">پرداخت قرض مشتری <strong>{{ customer.name }}</strong></p>
+
+        <!-- آمار قرض -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3"><div class="paydebt-stat-card warning"><small>📊 قرض فعلی</small><h3>{{ "{:,.0f}".format(customer.total_debt) }} افغانی</h3></div></div>
+            <div class="col-md-3"><div class="paydebt-stat-card info"><small>👤 مشتری</small><h3>{{ customer.name|truncate(12) }}</h3><small>{{ customer.phone or 'بدون تلفن' }}</small></div></div>
+            <div class="col-md-3"><div class="paydebt-stat-card danger"><small>📅 مدت قرض داری</small><h3>{% if customer.last_purchase_date %}{% set days_diff = (today - customer.last_purchase_date).days %}{% if days_diff > 0 %}{{ days_diff }} روز{% else %}تازه{% endif %}{% else %}نامشخص{% endif %}</h3></div></div>
+            <div class="col-md-3"><div class="paydebt-stat-card purple"><small>📝 وضعیت</small><h3>{% if customer.total_debt > 0 %}قرض‌دار{% else %}بدون قرض{% endif %}</h3></div></div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- اطلاعات مشتری -->
+                <div class="paydebt-info-card mb-4">
+                    <h5 class="paydebt-section-title"><i class="fas fa-user-circle"></i> 👤 اطلاعات مشتری</h5>
+                    <div class="row">
+                        <div class="col-md-6"><span class="paydebt-label">نام کامل:</span> {{ customer.name }}</div>
+                        <div class="col-md-6"><span class="paydebt-label">شماره تماس:</span> {{ customer.phone or 'ثبت نشده' }}</div>
+                        <div class="col-md-6"><span class="paydebt-label">آدرس:</span> {{ customer.address or 'ثبت نشده' }}</div>
+                        <div class="col-md-6"><span class="paydebt-label">کل قرض فعلی:</span> <span class="text-danger fw-bold">{{ "{:,.0f}".format(customer.total_debt) }} افغانی</span></div>
+                    </div>
+                </div>
+
+                <!-- فرم پرداخت -->
+                <div class="paydebt-form-card">
+                    <h5 class="paydebt-section-title"><i class="fas fa-hand-holding-usd"></i> 💳 اطلاعات پرداخت</h5>
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-4">
+                            <label class="paydebt-label">{{ form.amount.label.text }} <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                {{ form.amount(class="form-control paydebt-input", placeholder="مثال: ۱۰۰۰۰۰", max=customer.total_debt if customer.total_debt > 0 else '') }}
+                                <span class="input-group-text paydebt-input-group">افغانی</span>
+                            </div>
+                            <div class="paydebt-hint">
+                                حداکثر قابل پرداخت: <strong class="text-warning">{{ "{:,.0f}".format(customer.total_debt) }} افغانی</strong>
+                                {% if customer.total_debt > 0 %}
+                                | <span class="paydebt-full-amount" onclick="setFullAmount()">کلیک کنید تا تمام قرض پر شود</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="paydebt-label">{{ form.receipt_number.label.text }}</label>
+                            {{ form.receipt_number(class="form-control paydebt-input", placeholder="مثال: RCPT-2023-001") }}
+                            <div class="paydebt-hint">شماره رسید بانکی یا فیش پرداخت (اختیاری)</div>
+                        </div>
+
+                        {% if form.payment_method %}
+                        <div class="mb-4">
+                            <label class="paydebt-label">روش پرداخت</label>
+                            {{ form.payment_method(class="form-control paydebt-input") }}
+                        </div>
+                        {% endif %}
+
+                        {% if form.notes %}
+                        <div class="mb-4">
+                            <label class="paydebt-label">یادداشت</label>
+                            {{ form.notes(class="form-control paydebt-input", rows="3", placeholder="توضیحات اضافی درباره پرداخت...") }}
+                        </div>
+                        {% endif %}
+
+                        <!-- پیش‌نمایش پرداخت -->
+                        <div class="paydebt-preview">
+                            <h6>📋 خلاصه پرداخت</h6>
+                            <div class="preview-row"><span>قرض فعلی:</span><span class="text-danger">{{ "{:,.0f}".format(customer.total_debt) }} افغانی</span></div>
+                            <div class="preview-row"><span>مبلغ پرداختی:</span><span id="paymentAmountPreview" class="text-success">۰ افغانی</span></div>
+                            <div class="preview-row"><span>باقی‌مانده پس از پرداخت:</span><span id="remainingAfterPayment" class="text-warning">{{ "{:,.0f}".format(customer.total_debt) }} افغانی</span></div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-success flex-grow-1"><i class="fas fa-check-circle"></i> ✅ تأیید و ثبت پرداخت</button>
+                            <a href="{{ url_for('main_bp.customer_detail', customer_id=customer.id) }}" class="btn btn-secondary"><i class="fas fa-times"></i> انصراف</a>
+                            <a href="{{ url_for('main_bp.list_debtors') }}" class="btn btn-info"><i class="fas fa-list"></i> لیست قرض‌داران</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.paydebt-page-wrapper { width: 100%; }
+.paydebt-title { color: #FFD700; margin-bottom: 5px; }
+.paydebt-subtitle { color: rgba(255, 255, 255, 0.7); }
+
+.paydebt-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.paydebt-stat-card.warning { border-top: 4px solid #fbbf24; }
+.paydebt-stat-card.info { border-top: 4px solid #22d3ee; }
+.paydebt-stat-card.danger { border-top: 4px solid #f87171; }
+.paydebt-stat-card.purple { border-top: 4px solid #a78bfa; }
+.paydebt-stat-card h3 { color: #FFD700; margin: 8px 0 0; font-size: 18px; }
+
+.paydebt-info-card, .paydebt-form-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+}
+.paydebt-section-title { color: #FFD700; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); }
+
+.paydebt-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.paydebt-label::before { content: "◉ "; color: #06b6d4; }
+
+.paydebt-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.paydebt-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.paydebt-input-group {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+}
+
+.paydebt-hint { color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-top: 5px; }
+.paydebt-full-amount { color: #22d3ee; cursor: pointer; text-decoration: underline; }
+
+.paydebt-preview {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 20px;
+}
+.preview-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.preview-row:last-child { border-bottom: none; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .preview-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+}
+</style>
+
+<script>
+function setFullAmount() {
+    const totalDebt = parseFloat("{{ customer.total_debt }}");
+    const amountInput = document.querySelector('[name="amount"]');
+    if (totalDebt > 0) {
+        amountInput.value = totalDebt;
+        updatePaymentPreview();
+        amountInput.style.animation = 'pulse 0.5s ease';
+        setTimeout(() => amountInput.style.animation = '', 500);
+    }
+}
+function updatePaymentPreview() {
+    const amountInput = document.querySelector('[name="amount"]');
+    const paymentAmount = parseFloat(amountInput.value) || 0;
+    const totalDebt = parseFloat("{{ customer.total_debt }}");
+    const remaining = totalDebt - paymentAmount;
+    document.getElementById('paymentAmountPreview').innerHTML = paymentAmount.toLocaleString() + ' افغانی';
+    document.getElementById('remainingAfterPayment').innerHTML = remaining.toLocaleString() + ' افغانی';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.querySelector('[name="amount"]');
+    amountInput.addEventListener('input', updatePaymentPreview);
+    updatePaymentPreview();
+});
+</script>
+{% endblock %}

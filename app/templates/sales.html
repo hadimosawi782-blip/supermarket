@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}لیست فروشات{% endblock %}
+
+{% block content %}
+<div class="sales-page-wrapper">
+    <div class="container mt-4 fade-in sales-container">
+        <h1 class="text-center mb-4 sales-title">📋 لیست فروشات</h1>
+
+        <div class="sales-actions mb-4">
+            <a href="{{ url_for('main_bp.add_sale') }}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> ➕ فروش جدید
+            </a>
+            <a href="{{ url_for('main_bp.returns_list') }}" class="btn btn-purple">
+                <i class="fas fa-exchange-alt"></i> ↩️ واپسی
+            </a>
+            <a href="{{ url_for('main_bp.product_sales_report') }}" class="btn btn-info">
+                <i class="fas fa-chart-line"></i>  گزارش فروش اجناس
+            </a>
+           
+        </div>
+
+        <!-- جستجوی پیشرفته -->
+        <div class="sales-search-card mb-4">
+            <h5 class="sales-search-title"><i class="fas fa-search"></i> 🔍 جستجوی پیشرفته فروش‌ها</h5>
+            <form method="GET" action="{{ url_for('main_bp.sales_search') }}" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="invoice_number" class="form-control sales-input" 
+                           placeholder="شماره بل..." value="{{ request.args.get('invoice_number', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="customer_name" class="form-control sales-input" 
+                           placeholder="نام مشتری..." value="{{ request.args.get('customer_name', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="start_date" class="form-control sales-input" 
+                           value="{{ request.args.get('start_date', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="end_date" class="form-control sales-input" 
+                           value="{{ request.args.get('end_date', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> جستجو
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- فیلتر فروشات -->
+        <div class="sales-filter mb-4">
+            <select class="form-control sales-select" onchange="window.location.href=this.value">
+                <option value="{{ url_for('main_bp.list_sales', filter='all') }}" {% if selected_filter == 'all' %}selected{% endif %}>همه فروشات</option>
+                <option value="{{ url_for('main_bp.list_sales', filter='paid') }}" {% if selected_filter == 'paid' %}selected{% endif %}>پرداخت شده</option>
+                <option value="{{ url_for('main_bp.list_sales', filter='debt') }}" {% if selected_filter == 'debt' %}selected{% endif %}>دارای قرض</option>
+            </select>
+        </div>
+
+        {% if sales %}
+        <div class="sales-table-container">
+            <div class="sales-table-header">
+                <h5 class="mb-0"><i class="fas fa-table"></i> لیست فروشات</h5>
+            </div>
+            <div class="sales-table-body">
+                <div class="table-responsive">
+                    <table class="sales-table">
+                        <thead>
+                            <tr>
+                                <th>شماره بل</th>
+                                <th>تاریخ</th>
+                                <th>مشتری</th>
+                                <th>مبلغ کل</th>
+                                <th>تخفیف</th>
+                                <th>مبلغ نهایی</th>
+                                <th>پرداختی</th>
+                                <th>قرض</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in sales %}
+                            {% set has_return = sale.returns|length > 0 %}
+                            <tr {% if has_return %}class="table-warning"{% endif %}>
+                                <td class="fw-bold">
+                                    {{ sale.invoice_number }}
+                                    {% if has_return %}
+                                    <span class="badge bg-warning ms-1" title="این فاکتور واپسی دارد">↩️</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ sale.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ sale.customer.name if sale.customer else 'بدون مشتری' }}</td>
+                                <td>{{ "{:,.0f}".format(sale.total_amount) }} افغانی</td>
+                                <td class="text-warning">{{ "{:,.0f}".format(sale.total_discount) }} افغانی</td>
+                                <td class="text-success fw-bold">{{ "{:,.0f}".format(sale.final_amount) }} افغانی</td>
+                                <td>{{ "{:,.0f}".format(sale.amount_paid) }} افغانی</td>
+                                <td>
+                                    <span class="badge {% if sale.remaining_debt > 0 %}bg-danger{% else %}bg-success{% endif %}">
+                                        {{ "{:,.0f}".format(sale.remaining_debt) }} افغانی
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="sales-btn-group">
+                                        <a href="{{ url_for('main_bp.edit_sale_full', sale_id=sale.id) }}" 
+                                           class="btn btn-sm btn-warning" title="ویرایش کامل">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('main_bp.print_invoice', sale_id=sale.id) }}" 
+                                           target="_blank" class="btn btn-sm btn-secondary" title="چاپ بل">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        {% if sale.returns|length > 0 %}
+                                        <a href="{{ url_for('main_bp.returns_list') }}?sale_id={{ sale.id }}" 
+                                           class="btn btn-sm btn-info" title="مشاهده واپسی‌ها">
+                                            <i class="fas fa-undo-alt"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                             </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="sales-table-footer">
+                            <tr>
+                                <th colspan="3" class="text-end">جمع کل:</th>
+                                <th>{{ "{:,.0f}".format(sales|sum(attribute='total_amount')) }} افغانی</th>
+                                <th>{{ "{:,.0f}".format(sales|sum(attribute='total_discount')) }} افغانی</th>
+                                <th>{{ "{:,.0f}".format(sales|sum(attribute='final_amount')) }} افغانی</th>
+                                <th>{{ "{:,.0f}".format(sales|sum(attribute='amount_paid')) }} افغانی</th>
+                                <th>{{ "{:,.0f}".format(sales|sum(attribute='remaining_debt')) }} افغانی</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- صفحه‌بندی -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="sales-pagination mt-4">
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main_bp.list_sales', page=pagination.prev_num, filter=selected_filter) }}">
+                            <i class="fas fa-chevron-right"></i> قبلی
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages() %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('main_bp.list_sales', page=page_num, filter=selected_filter) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('main_bp.list_sales', page=pagination.next_num, filter=selected_filter) }}">
+                            بعدی <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="sales-empty">
+            <i class="fas fa-shopping-cart fa-4x mb-3"></i>
+            <h3>هیچ فروشی ثبت نشده است</h3>
+            <a href="{{ url_for('main_bp.add_sale') }}" class="btn btn-success mt-3">ثبت اولین فروش</a>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.sales-page-wrapper { width: 100%; }
+.sales-title { color: #FFD700; }
+.sales-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; color: white; }
+.btn-purple:hover { background: linear-gradient(135deg, #7c3aed, #5b21b6); color: white; }
+
+.sales-search-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 20px;
+}
+.sales-search-title { color: #FFD700; margin-bottom: 15px; }
+.sales-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+}
+.sales-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: none !important;
+}
+.sales-select {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px;
+    width: 200px;
+}
+
+.sales-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.sales-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.sales-table-header h5 { color: #FFD700; margin: 0; }
+.sales-table { width: 100%; border-collapse: collapse; }
+.sales-table th { 
+    background: rgba(0, 0, 0, 0.4); 
+    color: #FFD700; 
+    padding: 12px; 
+    font-size: 13px; 
+    text-align: center; 
+    white-space: nowrap;
+}
+.sales-table td { 
+    padding: 10px; 
+    color: #e2e8f0; 
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1); 
+    text-align: center; 
+    vertical-align: middle;
+}
+.sales-table tbody tr:hover { background: rgba(255, 215, 0, 0.1); }
+.sales-table tr.table-warning td { background: rgba(255, 215, 0, 0.15); }
+.sales-table-footer th { background: rgba(0, 0, 0, 0.5); color: #FFD700; }
+.sales-btn-group { display: flex; gap: 5px; justify-content: center; }
+
+.sales-pagination .page-link {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+}
+.sales-pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    border-color: transparent;
+    color: white;
+}
+.sales-pagination .page-link:hover {
+    background: rgba(255, 215, 0, 0.2);
+    color: #FFD700;
+}
+
+.sales-empty { text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; }
+.sales-empty h3 { color: #FFD700; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) { 
+    .sales-table th, .sales-table td { font-size: 11px; padding: 6px; }
+    .sales-btn-group { flex-direction: column; gap: 3px; }
+}
+</style>
+{% endblock %}

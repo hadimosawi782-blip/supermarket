@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}استاک‌اوت سریع - {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="quickwriteoff-page-wrapper">
+    <div class="container mt-4 fade-in quickwriteoff-container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="quickwriteoff-card">
+                    <div class="quickwriteoff-card-header">
+                        <h4 class="mb-0"><i class="fas fa-skull-crossbones"></i> استاک‌اوت سریع - {{ product.name }}</h4>
+                    </div>
+                    <div class="quickwriteoff-card-body">
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+
+                            <div class="mb-3">
+                                <label class="quickwriteoff-label">محصول</label>
+                                <input type="text" class="form-control quickwriteoff-input" value="{{ product.name }} (موجودی: {{ product.quantity }} {{ product.unit }})" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="quickwriteoff-label">{{ form.quantity.label }}</label>
+                                {{ form.quantity(class="form-control quickwriteoff-input") }}
+                                <div class="quickwriteoff-hint">موجودی فعلی: {{ product.quantity }} {{ product.unit }}</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="quickwriteoff-label">{{ form.reason.label }}</label>
+                                {{ form.reason(class="form-control quickwriteoff-input") }}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="quickwriteoff-label">{{ form.description.label }}</label>
+                                {{ form.description(class="form-control quickwriteoff-input", rows="2", placeholder="توضیح مختصر...") }}
+                            </div>
+
+                            <div class="quickwriteoff-alert">
+                                <strong>⚠️ توجه:</strong> این عمل غیرقابل بازگشت است و ضرر مالی ایجاد می‌کند.
+                            </div>
+
+                            <div class="d-grid gap-2 mt-4">
+                                {{ form.submit(class="btn btn-danger btn-lg") }}
+                                <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> انصراف
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.quickwriteoff-page-wrapper { width: 100%; }
+
+.quickwriteoff-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 20px;
+    overflow: hidden;
+}
+.quickwriteoff-card-header {
+    background: rgba(220, 53, 69, 0.2);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.quickwriteoff-card-header h4 { color: #FFD700; margin: 0; }
+.quickwriteoff-card-body { padding: 25px; }
+
+.quickwriteoff-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.quickwriteoff-label::before { content: "◉ "; color: #06b6d4; }
+
+.quickwriteoff-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.quickwriteoff-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.quickwriteoff-hint { color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-top: 5px; }
+
+.quickwriteoff-alert {
+    background: rgba(241, 196, 15, 0.15);
+    border: 1px solid rgba(241, 196, 15, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    color: #fbbf24;
+    font-size: 13px;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+{% endblock %}

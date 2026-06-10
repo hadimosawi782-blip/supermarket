@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}بازیابی پشتیبان{% endblock %}
+
+{% block content %}
+<div class="importbackup-page-wrapper">
+    <div class="container mt-4 fade-in importbackup-container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="importbackup-card">
+                    <div class="importbackup-card-header">
+                        <h3 class="mb-0 text-center"><i class="fas fa-database"></i> بازیابی از پشتیبان</h3>
+                    </div>
+                    <div class="importbackup-card-body">
+                        <div class="importbackup-alert">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>هشدار:</strong> این عمل ممکن است داده‌های فعلی را بازنویسی کند. قبل از ادامه، حتماً از اطلاعات فعلی بک‌آپ بگیرید.
+                        </div>
+
+                        <form method="POST" enctype="multipart/form-data">
+                            {{ form.hidden_tag() }}
+
+                            <div class="mb-4">
+                                <label class="importbackup-label">انتخاب فایل پشتیبان (CSV)</label>
+                                <input type="file" name="backup_file" class="form-control importbackup-input" accept=".csv" required>
+                                <small class="importbackup-hint">فایل CSV را انتخاب کنید</small>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-warning flex-grow-1" onclick="return confirm('آیا از بازگردانی اطلاعات اطمینان دارید؟')">
+                                    <i class="fas fa-upload"></i> بارگذاری و بازیابی
+                                </button>
+                                <a href="{{ url_for('main_bp.backup_export') }}" class="btn btn-success">
+                                    <i class="fas fa-download"></i> دریافت پشتیبان فعلی
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.importbackup-page-wrapper { width: 100%; }
+
+.importbackup-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.importbackup-card-header {
+    background: rgba(255, 193, 7, 0.2);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.importbackup-card-header h3 { color: #FFD700; margin: 0; }
+.importbackup-card-body { padding: 25px; }
+
+.importbackup-alert {
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #f87171;
+    margin-bottom: 20px;
+}
+.importbackup-alert i { margin-left: 8px; }
+
+.importbackup-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.importbackup-label::before { content: "◉ "; color: #06b6d4; }
+
+.importbackup-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+.importbackup-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.importbackup-hint { color: rgba(255, 255, 255, 0.5); font-size: 11px; display: block; margin-top: 5px; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .importbackup-card-body { padding: 15px; }
+}
+</style>
+{% endblock %}

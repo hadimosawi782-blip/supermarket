@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}صفحه اصلی{% endblock %}
+
+{% block content %}
+<div class="index-page-wrapper">
+    <div class="container mt-4 fade-in index-container">
+        <div class="index-header">
+            <h1 class="index-title">🏪 به سیستم مدیریت نماینده گی رنگ افغان فیضی بامیان خوش آمدید</h1>
+            <p class="index-subtitle">مدیریت کامل کسب و کار شما در یک نگاه</p>
+        </div>
+
+        <div class="index-search-card mb-4">
+            <a href="/customers/advanced" class="index-search-link">
+                <i class="fas fa-search"></i> 🔍 جستجوی مشتری
+            </a>
+        </div>
+
+        <!-- باکس عکس -->
+        <div class="index-image-box">
+            <div class="index-image-container" id="imageContainer">
+                {% if dashboard_image %}
+                    <img src="{{ url_for('static', filename='uploads/' + dashboard_image) }}" alt="عکس داشبورد" class="index-image">
+                {% else %}
+                    <div class="index-image-placeholder">
+                        <i class="fas fa-image"></i>
+                        <p>تصویری انتخاب نشده است</p>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="index-image-actions">
+                <label for="imageUpload" class="btn btn-primary">
+                    <i class="fas fa-cloud-upload-alt"></i> انتخاب و آپلود عکس
+                </label>
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                {% if dashboard_image %}
+                    <button id="deleteImageBtn" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> حذف عکس
+                    </button>
+                {% endif %}
+            </div>
+            <div id="uploadStatus" class="index-upload-status"></div>
+        </div>
+
+        <!-- دکمه‌های سریع -->
+        <div class="index-quick-actions">
+            <a href="{{ url_for('main_bp.list_products') }}" class="index-action-card teal">
+                <i class="fas fa-boxes"></i> <span>📦 اجناس</span>
+            </a>
+            <a href="{{ url_for('main_bp.list_customers') }}" class="index-action-card info">
+                <i class="fas fa-users"></i> <span>👥 مشتریان</span>
+            </a>
+            <a href="{{ url_for('main_bp.list_sales') }}" class="index-action-card success">
+                <i class="fas fa-shopping-cart"></i> <span>🛒 فروشات</span>
+            </a>
+            <a href="{{ url_for('main_bp.list_expenses') }}" class="index-action-card danger">
+                <i class="fas fa-receipt"></i> <span>💰 مصارف</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.index-page-wrapper { width: 100%; }
+.index-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 215, 0, 0.15);
+}
+.index-title { color: #FFD700; font-size: 1.8rem; margin-bottom: 10px; }
+.index-subtitle { color: rgba(255, 255, 255, 0.7); font-size: 1rem; }
+
+.index-search-card {
+    text-align: center;
+    margin-bottom: 25px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 215, 0, 0.15);
+}
+.index-search-link {
+    display: inline-block;
+    padding: 8px 25px;
+    background: rgba(32, 201, 151, 0.25);
+    border-radius: 30px;
+    color: #FFD700;
+    text-decoration: none;
+}
+.index-search-link:hover { background: rgba(32, 201, 151, 0.4); color: #fff3b0; }
+
+.index-image-box {
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    margin-bottom: 30px;
+}
+.index-image-container {
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    margin-bottom: 15px;
+}
+.index-image { max-width: 100%; max-height: 300px; object-fit: contain; border-radius: 12px; }
+.index-image-placeholder { padding: 60px 20px; color: rgba(255, 255, 255, 0.5); text-align: center; }
+.index-image-placeholder i { font-size: 48px; margin-bottom: 10px; display: block; }
+.index-image-actions { display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+.index-upload-status { margin-top: 15px; font-size: 13px; }
+.index-upload-status.success { color: #4ade80; }
+.index-upload-status.error { color: #f87171; }
+
+.index-quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+.index-action-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 18px;
+    border-radius: 16px;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    transition: all 0.3s;
+    color: #FFD700;
+}
+.index-action-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff3b0;
+}
+.index-action-card i { font-size: 24px; }
+.index-action-card span { font-weight: 600; }
+.index-action-card.teal { border-top: 3px solid #22d3ee; }
+.index-action-card.info { border-top: 3px solid #3b82f6; }
+.index-action-card.success { border-top: 3px solid #4ade80; }
+.index-action-card.danger { border-top: 3px solid #f87171; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .index-title { font-size: 1.3rem; }
+    .index-quick-actions { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 576px) {
+    .index-quick-actions { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageUpload = document.getElementById('imageUpload');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const imageContainer = document.getElementById('imageContainer');
+    
+    if (imageUpload) {
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                uploadStatus.textContent = 'لطفاً فقط فایل تصویری انتخاب کنید';
+                uploadStatus.className = 'index-upload-status error';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                uploadStatus.textContent = 'حجم فایل باید کمتر از 5 مگابایت باشد';
+                uploadStatus.className = 'index-upload-status error';
+                return;
+            }
+            const formData = new FormData();
+            formData.append('image', file);
+            uploadStatus.textContent = 'در حال آپلود...';
+            uploadStatus.className = 'index-upload-status loading';
+            fetch('/api/upload-dashboard-image', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    uploadStatus.textContent = 'عکس با موفقیت آپلود شد';
+                    uploadStatus.className = 'index-upload-status success';
+                    imageContainer.innerHTML = `<img src="${data.image_url}?t=${Date.now()}" alt="عکس داشبورد" class="index-image">`;
+                    if (!document.getElementById('deleteImageBtn')) {
+                        const wrapper = document.querySelector('.index-image-actions');
+                        const newDeleteBtn = document.createElement('button');
+                        newDeleteBtn.id = 'deleteImageBtn';
+                        newDeleteBtn.className = 'btn btn-danger';
+                        newDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> حذف عکس';
+                        wrapper.appendChild(newDeleteBtn);
+                        newDeleteBtn.addEventListener('click', deleteImage);
+                    }
+                    setTimeout(() => { uploadStatus.style.display = 'none'; }, 3000);
+                } else {
+                    uploadStatus.textContent = data.error || 'خطا در آپلود عکس';
+                    uploadStatus.className = 'index-upload-status error';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                uploadStatus.textContent = 'خطا در ارتباط با سرور';
+                uploadStatus.className = 'index-upload-status error';
+            });
+        });
+    }
+    
+    function deleteImage() {
+        if (!confirm('آیا از حذف این عکس اطمینان دارید؟')) return;
+        uploadStatus.textContent = 'در حال حذف...';
+        uploadStatus.className = 'index-upload-status loading';
+        fetch('/api/delete-dashboard-image', { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                uploadStatus.textContent = 'عکس با موفقیت حذف شد';
+                uploadStatus.className = 'index-upload-status success';
+                imageContainer.innerHTML = `<div class="index-image-placeholder"><i class="fas fa-image"></i><p>تصویری انتخاب نشده است</p></div>`;
+                const deleteBtn = document.getElementById('deleteImageBtn');
+                if (deleteBtn) deleteBtn.remove();
+                setTimeout(() => { uploadStatus.style.display = 'none'; }, 3000);
+            } else {
+                uploadStatus.textContent = data.error || 'خطا در حذف عکس';
+                uploadStatus.className = 'index-upload-status error';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            uploadStatus.textContent = 'خطا در ارتباط با سرور';
+            uploadStatus.className = 'index-upload-status error';
+        });
+    }
+    
+    const deleteBtn = document.getElementById('deleteImageBtn');
+    if (deleteBtn) deleteBtn.addEventListener('click', deleteImage);
+});
+</script>
+{% endblock %}

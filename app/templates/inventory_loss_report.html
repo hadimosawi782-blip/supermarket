@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block title %}گزارش ضرر موجودی{% endblock %}
+
+{% block content %}
+<div class="loss-report-page-wrapper">
+    <div class="container mt-4 fade-in loss-report-container">
+        <h1 class="text-center mb-4 loss-report-title">📉 گزارش ضرر موجودی</h1>
+
+        <!-- دکمه ثبت ضرر جدید -->
+        <div class="text-center mb-4">
+            <a href="{{ url_for('main_bp.inventory_write_off') }}" class="btn btn-danger btn-lg">
+                <i class="fas fa-skull-crossbones"></i> ثبت ضرر جدید
+            </a>
+        </div>
+
+        <!-- فرم فیلتر تاریخ -->
+        <div class="loss-filter-card mb-4">
+            <div class="loss-filter-header">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> فیلتر تاریخ</h5>
+            </div>
+            <div class="loss-filter-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-5">
+                        <label class="loss-label">از تاریخ</label>
+                        <input type="date" name="start_date" class="form-control loss-input" value="{{ start_date or '' }}">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="loss-label">تا تاریخ</label>
+                        <input type="date" name="end_date" class="form-control loss-input" value="{{ end_date or '' }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> فیلتر
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- آمار -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4 col-6">
+                <div class="loss-stat-card">
+                    <div class="loss-stat-icon bg-info">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="loss-stat-details">
+                        <small class="stat-label">تعداد ضرر‌ها</small>
+                        <div class="stat-number">{{ losses|length if losses else 0 }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="loss-stat-card">
+                    <div class="loss-stat-icon bg-danger">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="loss-stat-details">
+                        <small class="stat-label">کل مبلغ ضرر</small>
+                        <div class="stat-number">{{ "{:,.0f}".format(total_loss_amount|default(0)) }} <small>افغانی</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="loss-stat-card">
+                    <div class="loss-stat-icon bg-warning">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="loss-stat-details">
+                        <small class="stat-label">تعداد اقلام ضرر دیده</small>
+                        <div class="stat-number">{{ total_items|default(0) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if losses %}
+        <div class="loss-table-container">
+            <div class="loss-table-header">
+                <h5 class="mb-0"><i class="fas fa-list"></i> لیست ضرر‌های موجودی</h5>
+            </div>
+            <div class="loss-table-body">
+                <div class="table-responsive">
+                    <table class="loss-table">
+                        <thead>
+                            <tr>
+                                <th>شناسه</th>
+                                <th>تاریخ</th>
+                                <th>محصول</th>
+                                <th>تعداد</th>
+                                <th>قیمت واحد</th>
+                                <th>مبلغ ضرر</th>
+                                <th>دلیل</th>
+                                <th>توضیحات</th>
+                                <th>ثبت کننده</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loss in losses %}
+                            <tr>
+                                <td>{{ loss.id }}</td>
+                                <td>{{ loss.loss_date.strftime('%Y-%m-%d %H:%M') if loss.loss_date else '-' }}</td>
+                                <td>{{ loss.product.name if loss.product else '-' }}</td>
+                                <td>{{ loss.quantity|int }} عدد</td>
+                                <td>{{ "{:,.0f}".format(loss.unit_cost|default(0)) }} افغانی</td>
+                                <td class="text-danger loss-amount">{{ "{:,.0f}".format(loss.total_loss|default(0)) }} افغانی</td>
+                                <td>
+                                    <span class="badge {% if loss.reason == 'خراب' %}bg-danger{% elif loss.reason == 'گم شده' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ loss.reason or '-' }}
+                                    </span>
+                                </td>
+                                <td>{{ loss.description or '-' }}</td>
+                                <td>{{ loss.user.full_name if loss.user else '-' }}</td>
+                             </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="5" class="text-end">جمع کل:</th>
+                                <th class="text-danger">{{ "{:,.0f}".format(total_loss_amount|default(0)) }} افغانی</th>
+                                <th colspan="3"></th>
+                             </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="loss-empty-state">
+            <i class="fas fa-check-circle fa-4x mb-3"></i>
+            <h3>✅ هیچ ضرر موجودی ثبت نشده است</h3>
+            <p class="mt-2">برای ثبت ضرر جدید، روی دکمه زیر کلیک کنید</p>
+            <a href="{{ url_for('main_bp.inventory_write_off') }}" class="btn btn-danger mt-3">
+                <i class="fas fa-skull-crossbones"></i> ثبت ضرر جدید
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- دکمه بازگشت -->
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.loss-report-page-wrapper { width: 100%; }
+
+.loss-report-title { color: #FFD700; margin-bottom: 30px; font-weight: bold; }
+
+/* کارت فیلتر */
+.loss-filter-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.loss-filter-header {
+    background: rgba(6, 182, 212, 0.25);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.loss-filter-header h5 { color: #FFD700; margin: 0; }
+
+.loss-filter-body { padding: 20px; }
+
+/* کارت‌های آمار */
+.loss-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.loss-stat-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: #FFD700;
+}
+
+.loss-stat-icon {
+    width: 55px;
+    height: 55px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.loss-stat-icon.bg-info { background: linear-gradient(135deg, #0d6efd, #0b5ed7); }
+.loss-stat-icon.bg-danger { background: linear-gradient(135deg, #dc3545, #bb2d3b); }
+.loss-stat-icon.bg-warning { background: linear-gradient(135deg, #ffc107, #ff9f00); color: #2c3e50; }
+
+.loss-stat-details .stat-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    display: block;
+}
+
+.loss-stat-details .stat-number {
+    font-size: 20px;
+    font-weight: bold;
+    color: #FFD700;
+}
+
+/* جدول */
+.loss-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.loss-table-header {
+    background: rgba(0, 0, 0, 0.35);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.loss-table-header h5 { color: #FFD700; margin: 0; }
+
+.loss-table-body { padding: 0; overflow-x: auto; }
+
+.loss-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+}
+
+.loss-table thead th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 14px 10px;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.loss-table tbody tr {
+    border-bottom: 1px solid rgba(255, 215, 0, 0.08);
+    transition: all 0.2s ease;
+}
+
+.loss-table tbody tr:hover { background: rgba(59, 130, 246, 0.15); }
+
+.loss-table tbody td {
+    padding: 12px 10px;
+    color: #e2e8f0;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.loss-table tfoot th {
+    background: rgba(0, 0, 0, 0.5);
+    color: #FFD700;
+    padding: 12px;
+    font-weight: bold;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.loss-amount { font-weight: bold; }
+
+/* ورودی‌ها */
+.loss-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+    width: 100%;
+}
+
+.loss-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+}
+
+.loss-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.loss-label::before { content: "◉ "; color: #06b6d4; }
+
+/* حالت خالی */
+.loss-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+}
+
+.loss-empty-state i { color: rgba(255, 215, 0, 0.5); }
+.loss-empty-state h3 { color: #FFD700; }
+
+/* انیمیشن */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .loss-table thead th, .loss-table tbody td { font-size: 11px; padding: 8px 6px; }
+    .loss-stat-card { padding: 10px 15px; }
+    .loss-stat-icon { width: 45px; height: 45px; font-size: 20px; }
+    .loss-stat-details .stat-number { font-size: 16px; }
+}
+
+/* پرینت */
+@media print {
+    .btn, .loss-filter-card, .loss-table-header, .loss-empty-state .btn {
+        display: none !important;
+    }
+    .loss-table-container {
+        background: white !important;
+        border: 1px solid #ddd !important;
+    }
+    .loss-table thead th { background: #f8f9fa !important; color: black !important; }
+    .loss-table tbody td { color: black !important; }
+    .loss-stat-card {
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+    }
+    .loss-stat-details .stat-number { color: #333; }
+}
+</style>
+{% endblock %}

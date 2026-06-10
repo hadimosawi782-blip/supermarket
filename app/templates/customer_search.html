@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}جستجوی پیشرفته مشتریان{% endblock %}
+
+{% block content %}
+<div class="customersearch-page-wrapper">
+    <div class="container mt-4 fade-in customersearch-container">
+        <h1 class="text-center mb-4 customersearch-title">🔍 جستجوی پیشرفته مشتریان</h1>
+
+        <!-- فرم جستجو -->
+        <div class="customersearch-card mb-4">
+            <div class="customersearch-card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" id="name" class="form-control customersearch-input" placeholder="نام مشتری...">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="phone" class="form-control customersearch-input" placeholder="شماره تماس...">
+                    </div>
+                    <div class="col-md-4">
+                        <select id="debt_status" class="form-control customersearch-input">
+                            <option value="all">همه مشتریان</option>
+                            <option value="debtor">بدهکاران</option>
+                            <option value="settled">تسویه شده‌ها</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="searchResults"></div>
+        <div id="pagination" class="text-center mt-3"></div>
+    </div>
+</div>
+
+<style>
+.customersearch-page-wrapper { width: 100%; }
+.customersearch-title { color: #FFD700; }
+
+.customersearch-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+}
+
+.customersearch-card-body { padding: 20px; }
+
+.customersearch-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.customersearch-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+
+.customersearch-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.customersearch-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    font-size: 13px;
+}
+.customersearch-table td {
+    padding: 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    font-size: 12px;
+}
+
+.customersearch-empty { text-align: center; padding: 60px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+
+<script>
+let currentPage = 1;
+let searchTimeout;
+
+function searchCustomers() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const debtStatus = document.getElementById('debt_status').value;
+
+        fetch(`/customers/search?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&debt_status=${debtStatus}&page=${currentPage}`)
+            .then(response => response.json())
+            .then(data => displayResults(data))
+            .catch(error => console.error('Error:', error));
+    }, 300);
+}
+
+function displayResults(data) {
+    const resultsDiv = document.getElementById('searchResults');
+    const paginationDiv = document.getElementById('pagination');
+
+    if (!data.customers || data.customers.length === 0) {
+        resultsDiv.innerHTML = `<div class="customersearch-empty"><i class="fas fa-search fa-4x"></i><h3>هیچ مشتری یافت نشد</h3></div>`;
+        paginationDiv.innerHTML = '';
+        return;
+    }
+
+    let html = `<div class="table-responsive"><table class="customersearch-table">
+        <thead><tr><th>نام مشتری</th><th>شماره تماس</th><th>قرض (افغانی)</th><th>تاریخ ثبت</th><th>عملیات</th></tr></thead><tbody>`;
+
+    data.customers.forEach(c => {
+        html += `<tr>
+            <td>${escapeHtml(c.name)}</td>
+            <td>${escapeHtml(c.phone) || '-'}</td>
+            <td class="${c.total_debt > 0 ? 'text-danger' : 'text-success'} fw-bold">${new Intl.NumberFormat().format(c.total_debt)}</td>
+            <td>${c.created_at ? new Date(c.created_at).toLocaleDateString('fa-IR') : '-'}</td>
+            <td>
+                <a href="/customers/${c.id}" class="btn btn-info btn-sm">👁️ مشاهده</a>
+                ${c.total_debt > 0 ? `<a href="/customers/pay_debt/${c.id}" class="btn btn-success btn-sm">💳 پرداخت</a>` : ''}
+            </td>
+        </tr>`;
+    });
+    html += `</tbody></table></div><div class="mt-2 text-center text-muted">تعداد نتایج: ${data.total} مشتری</div>`;
+    resultsDiv.innerHTML = html;
+
+    let paginationHtml = '';
+    if (data.has_prev) paginationHtml += `<button class="btn btn-sm btn-secondary m-1" onclick="changePage(${data.prev_num})">⏪ قبلی</button>`;
+    paginationHtml += `<span class="mx-3">صفحه ${data.page} از ${data.pages}</span>`;
+    if (data.has_next) paginationHtml += `<button class="btn btn-sm btn-secondary m-1" onclick="changePage(${data.next_num})">بعدی ⏩</button>`;
+    paginationDiv.innerHTML = paginationHtml;
+}
+
+function changePage(page) { currentPage = page; searchCustomers(); window.scrollTo(0, 0); }
+function escapeHtml(text) { if (!text) return '-'; return text.replace(/[&<>]/g, function(m) { return {'&':'&amp;','<':'&lt;','>':'&gt;'}[m]; }); }
+
+document.getElementById('name').addEventListener('input', () => { currentPage = 1; searchCustomers(); });
+document.getElementById('phone').addEventListener('input', () => { currentPage = 1; searchCustomers(); });
+document.getElementById('debt_status').addEventListener('change', () => { currentPage = 1; searchCustomers(); });
+document.addEventListener('DOMContentLoaded', () => searchCustomers());
+</script>
+{% endblock %}

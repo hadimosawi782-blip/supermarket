@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}تغییر گروهی قیمت محصولات{% endblock %}
+
+{% block content %}
+<div class="bulkprice-page-wrapper">
+    <div class="container mt-4 fade-in bulkprice-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="bulkprice-card">
+                    <div class="bulkprice-card-header">
+                        <h3 class="mb-0 text-center"><i class="fas fa-tags"></i> تغییر گروهی قیمت محصولات</h3>
+                    </div>
+                    <div class="bulkprice-card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <div class="mb-4">
+                                <label class="bulkprice-label">نوع عملیات</label>
+                                <select name="operation" class="form-control bulkprice-input" required>
+                                    <option value="increase">⬆ افزایش قیمت</option>
+                                    <option value="decrease">⬇ کاهش قیمت</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="bulkprice-label">درصد تغییر</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" min="0" name="percent" 
+                                           class="form-control bulkprice-input" placeholder="مثلاً 10" required>
+                                    <span class="input-group-text bulkprice-input-group">%</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="bulkprice-label">نوع قیمت</label>
+                                <select name="price_type" class="form-control bulkprice-input" required>
+                                    <option value="selling">قیمت فروش</option>
+                                    <option value="buying">قیمت خرید</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning w-100 bulkprice-btn">
+                                <i class="fas fa-check-circle"></i> اعمال تغییرات
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.bulkprice-page-wrapper { width: 100%; }
+
+.bulkprice-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.bulkprice-card-header {
+    background: rgba(255, 193, 7, 0.2);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    text-align: center;
+}
+.bulkprice-card-header h3 { color: #FFD700; margin: 0; }
+
+.bulkprice-card-body { padding: 25px; }
+
+.bulkprice-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.bulkprice-label::before { content: "◉ "; color: #06b6d4; }
+
+.bulkprice-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.bulkprice-input-group {
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+}
+
+.bulkprice-btn {
+    padding: 12px !important;
+    font-size: 16px !important;
+    font-weight: 600;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+{% endblock %}

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>گزارش مصارف - سوپرمارکت مدرن</title>
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+            body {
+                font-family: Tahoma, Arial, sans-serif;
+                direction: rtl;
+                margin: 0;
+                padding: 0;
+                background: white;
+                color: black;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        body {
+            font-family: Tahoma, Arial, sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        
+        .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .summary-cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 150px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .print-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 10px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .close-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        <!-- هدر گزارش -->
+        <div class="header">
+            <h1 style="margin: 0; color: #667eea;">🏪 سوپرمارکت مدرن</h1>
+            <h2 style="margin: 10px 0; color: #333;">گزارش مصارف</h2>
+            <p style="margin: 5px 0; color: #666;">
+                تاریخ گزارش: {{ now.strftime('%Y/%m/%d - %H:%M') }}
+                {% if selected_filter == 'today' %}
+                - (امروز)
+                {% elif selected_filter == 'month' %}
+                - (این ماه)
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- آمار کلی -->
+        <div class="summary-cards">
+            <div class="card" style="background: #e8f5e8; border: 1px solid #28a745;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #155724;">تعداد مصارف</h3>
+                <p style="font-size: 24px; margin: 0; color: #28a745; font-weight: bold;">{{ expenses|length }}</p>
+            </div>
+            <div class="card" style="background: #fff3cd; border: 1px solid #856404;">
+                <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #856404;">مجموع مصارف</h3>
+                <p style="font-size: 24px; margin: 0; color: #856404; font-weight: bold;">{{ "{:,.0f}".format(total_expenses) }} افغانی</p>
+            </div>
+        </div>
+
+
+        <!-- جدول گزارش -->
+        {% if expenses %}
+        <div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ردیف</th>
+                        <th>توضیحات</th>
+                        <th>مبلغ (افغانی)</th>
+                        <th>تاریخ</th>
+                        <th>ثبت شده توسط</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for expense in expenses %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td style="text-align: right;">{{ expense.description }}</td>
+                        <td style="font-weight: bold; color: #e74c3c;">{{ "{:,.0f}".format(expense.amount) }}</td>
+                        <td>{{ expense.date|persian_date }}</td>
+                        <td>{{ expense.user.full_name if expense.user else 'سیستم' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f8f9fa; font-weight: bold;">
+                        <td colspan="2" style="text-align: left;">جمع کل:</td>
+                        <td style="color: #e74c3c;">{{ "{:,.0f}".format(total_expenses) }} افغانی</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h3>📝 هیچ مصرفی برای نمایش وجود ندارد</h3>
+        </div>
+        {% endif %}
+
+        <!-- فوتر -->
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+            <p>این گزارش به صورت خودکار تولید شده است</p>
+            <p>تاریخ چاپ: {{ now.strftime('%Y/%m/%d %H:%M') }}</p>
+        </div>
+    </div>
+
+    <!-- دکمه‌های action (فقط در نمایش مرورگر) -->
+    <div class="no-print" style="text-align: center; margin-top: 20px; padding: 20px;">
+        <button onclick="window.print()" class="print-btn">
+            🖨️ چاپ گزارش
+        </button>
+        <button onclick="window.close()" class="close-btn">
+            ❌ بستن پنجره
+        </button>
+    </div>
+
+    <script>
+        // چاپ خودکار هنگام لود صفحه (اختیاری)
+        // اگر می‌خواهید خودکار چاپ شود، خط زیر را آنکامنت کنید
+        // window.addEventListener('load', function() {
+        //     window.print();
+        // });
+    </script>
+</body>
+</html>

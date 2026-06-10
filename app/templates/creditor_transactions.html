@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+{% block title %}تراکنش‌های طلبکار{% endblock %}
+
+{% block content %}
+<div class="credtrans-page-wrapper">
+    <div class="container mt-4 fade-in credtrans-container">
+        <h1 class="text-center mb-4 credtrans-title">💰 تراکنش‌های طلبکار: {{ creditor.name }}</h1>
+
+        <!-- باکس انتخاب طلبکار -->
+        <div class="credtrans-selector mb-4">
+            <i class="fas fa-user-tie"></i>
+            <label for="creditorSelect">انتخاب طلبکار:</label>
+            <select id="creditorSelect" class="credtrans-select">
+                {% for c in all_creditors %}
+                <option value="{{ c.id }}" {% if c.id == creditor.id %}selected{% endif %}>
+                    {{ c.name }} - طلب: {{ "{:,.0f}".format(c.current_debt) }} افغانی
+                </option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-primary" onclick="changeCreditor()"><i class="fas fa-sync-alt"></i> تغییر</button>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <!-- اطلاعات طلبکار -->
+                <div class="credtrans-info-card">
+                    <h5 class="credtrans-section-title"><i class="fas fa-user-tie"></i> اطلاعات طلبکار</h5>
+                    <div class="credtrans-info-grid">
+                        <div class="credtrans-info-item">
+                            <span class="credtrans-info-label">نام طلبکار</span>
+                            <span class="credtrans-info-value">{{ creditor.name }}</span>
+                        </div>
+                        <div class="credtrans-info-item">
+                            <span class="credtrans-info-label">شماره تماس</span>
+                            <span class="credtrans-info-value">{{ creditor.phone or '-' }}</span>
+                        </div>
+                        <div class="credtrans-info-item">
+                            <span class="credtrans-info-label">آدرس</span>
+                            <span class="credtrans-info-value">{{ creditor.address or '-' }}</span>
+                        </div>
+                        <div class="credtrans-info-item">
+                            <span class="credtrans-info-label">طلب فعلی</span>
+                            <span class="credtrans-info-value debt">{{ "{:,.0f}".format(creditor.current_debt) }} افغانی</span>
+                        </div>
+                    </div>
+                    {% if creditor.current_debt > 0 %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('main_bp.pay_creditor', creditor_id=creditor.id) }}" class="btn btn-success btn-sm">
+                            <i class="fas fa-hand-holding-usd"></i> پرداخت قرض
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- ✅ باکس نمایش موجودی صندوق (جدید) -->
+                <div class="credtrans-cash-box mt-4">
+                    <div class="credtrans-cash-card">
+                        <h5 class="credtrans-section-title"><i class="fas fa-money-bill-wave"></i> 💰 موجودی صندوق</h5>
+                        <div class="text-center">
+                            <div class="cash-amount {% if cash_balance|default(0) <= 0 %}text-danger{% else %}text-success{% endif %}">
+                                {{ "{:,.0f}".format(cash_balance|default(0)) }}
+                            </div>
+                            <small class="text-muted">افغانی</small>
+                            {% if cash_balance|default(0) <= 0 %}
+                            <div class="alert alert-danger mt-2 mb-0">
+                                <i class="fas fa-exclamation-triangle"></i> موجودی صندوق کافی نیست!
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- فرم ثبت تراکنش جدید -->
+                <div class="credtrans-form-card mt-4">
+                    <h5 class="credtrans-section-title"><i class="fas fa-plus-circle"></i> ثبت تراکنش جدید</h5>
+                    <form method="POST" id="transactionForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label class="credtrans-label">{{ form.transaction_type.label }}</label>
+                            {{ form.transaction_type(class="form-control credtrans-input", id="transactionType") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="credtrans-label">{{ form.amount.label }}</label>
+                            {{ form.amount(class="form-control credtrans-input", id="amount", placeholder="مبلغ به افغانی", min="0.01", step="0.01") }}
+                            <div id="amountWarning" class="credtrans-warning" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="credtrans-label">{{ form.receipt_number.label }}</label>
+                            {{ form.receipt_number(class="form-control credtrans-input", placeholder="اختیاری - شماره رسید") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="credtrans-label">{{ form.transaction_date.label }}</label>
+                            {{ form.transaction_date(class="form-control credtrans-input", type="date") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="credtrans-label">{{ form.description.label }}</label>
+                            {{ form.description(class="form-control credtrans-input", rows="3", placeholder="توضیحات تراکنش") }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                            <i class="fas fa-save"></i> ثبت تراکنش
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <!-- دکمه‌های عملیات -->
+                <div class="credtrans-actions">
+                    <span class="credtrans-badge">{{ transactions|length }} تراکنش</span>
+                    <button onclick="window.print()" class="btn btn-secondary btn-sm"><i class="fas fa-print"></i> چاپ</button>
+                    <a href="{{ url_for('main_bp.export_creditor_transactions', creditor_id=creditor.id) }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-file-excel"></i> اکسل
+                    </a>
+                </div>
+
+                <!-- تاریخچه تراکنش‌ها -->
+                <h5 class="credtrans-section-title mt-4"><i class="fas fa-history"></i> تاریخچه تراکنش‌ها</h5>
+
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="credtrans-table">
+                        <thead>
+                            <tr>
+                                <th>تاریخ</th>
+                                <th>نوع</th>
+                                <th>مبلغ</th>
+                                <th>شماره رسید</th>
+                                <th>توضیحات</th>
+                                <th>ثبت کننده</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in transactions %}
+                            <tr>
+                                <td>{{ t.date_created|persian_date }}<br><small>{{ t.date_created.strftime('%H:%M') }}</small></td>
+                                <td>
+                                    {% if t.transaction_type == 'debt' %}
+                                    <span class="credtrans-badge-debt">📈 افزایش طلب</span>
+                                    {% else %}
+                                    <span class="credtrans-badge-payment">📉 پرداخت</span>
+                                    {% endif %}
+                                </td>
+                                <td class="{% if t.transaction_type == 'debt' %}credtrans-amount-debt{% else %}credtrans-amount-payment{% endif %}">
+                                    {{ "{:+,.0f}".format(t.amount) }}
+                                </td>
+                                <td>{% if t.receipt_number %}<span class="credtrans-receipt">📄 {{ t.receipt_number }}</span>{% else %}-{% endif %}<\/td>
+                                <td>{{ t.description|truncate(40) or '-' }}<\/td>
+                                <td><span class="credtrans-user">👤 {{ t.user.full_name if t.user else '-' }}</span><\/td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- خلاصه تراکنش‌ها -->
+                <div class="credtrans-summary mt-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="credtrans-summary-item">
+                                <span>مجموع افزایش طلب</span>
+                                <strong class="text-danger">
+                                    {% set total_debt = transactions|selectattr('transaction_type', 'equalto', 'debt')|sum(attribute='amount') %}
+                                    {{ "{:,.0f}".format(total_debt) }} افغانی
+                                </strong>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="credtrans-summary-item">
+                                <span>مجموع پرداخت‌ها</span>
+                                <strong class="text-success">
+                                    {% set total_payments = transactions|selectattr('transaction_type', 'equalto', 'payment')|sum(attribute='amount') %}
+                                    {{ "{:,.0f}".format(total_payments) }} افغانی
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="credtrans-empty">
+                    <i class="fas fa-exchange-alt fa-4x"></i>
+                    <p>هیچ تراکنشی ثبت نشده است</p>
+                </div>
+                {% endif %}
+
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('main_bp.list_creditors') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right"></i> بازگشت به لیست طلبکاران
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.credtrans-page-wrapper { width: 100%; }
+.credtrans-title { color: #FFD700; }
+
+.credtrans-selector {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+.credtrans-selector label { color: #FFD700; margin: 0; }
+.credtrans-select {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #FFD700;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+.credtrans-select option { background: #1a1a2e; }
+
+.credtrans-info-card, .credtrans-form-card, .credtrans-cash-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.credtrans-cash-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6));
+    text-align: center;
+}
+.cash-amount {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.cash-amount.text-success { color: #4ade80; }
+.cash-amount.text-danger { color: #f87171; }
+
+.credtrans-section-title {
+    color: #FFD700;
+    font-size: 16px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.credtrans-info-grid { display: flex; flex-direction: column; gap: 12px; }
+.credtrans-info-item { display: flex; justify-content: space-between; }
+.credtrans-info-label { color: rgba(255, 255, 255, 0.6); font-size: 13px; }
+.credtrans-info-value { color: #e2e8f0; font-weight: 600; }
+.credtrans-info-value.debt { color: #f87171; font-size: 18px; }
+
+.credtrans-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #FFD700;
+    font-size: 13px;
+}
+.credtrans-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+.credtrans-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    outline: none;
+}
+
+.credtrans-warning {
+    color: #f87171;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.credtrans-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 15px; }
+.credtrans-badge {
+    background: rgba(6, 182, 212, 0.2);
+    padding: 5px 12px;
+    border-radius: 20px;
+    color: #22d3ee;
+    font-size: 12px;
+}
+
+.credtrans-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.credtrans-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    font-size: 13px;
+}
+.credtrans-table td {
+    padding: 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    font-size: 12px;
+}
+.credtrans-badge-debt { background: rgba(220, 53, 69, 0.2); color: #f87171; padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+.credtrans-badge-payment { background: rgba(40, 167, 69, 0.2); color: #4ade80; padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+.credtrans-amount-debt { color: #f87171; font-weight: 600; }
+.credtrans-amount-payment { color: #4ade80; font-weight: 600; }
+.credtrans-receipt { background: rgba(41, 128, 185, 0.2); padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+.credtrans-user { background: rgba(102, 126, 234, 0.2); padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+
+.credtrans-summary {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+}
+.credtrans-summary-item { display: flex; justify-content: space-between; padding: 8px 0; }
+.credtrans-empty { text-align: center; padding: 50px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .credtrans-selector { flex-direction: column; align-items: stretch; }
+    .credtrans-table th, .credtrans-table td { font-size: 10px; padding: 6px; }
+    .cash-amount { font-size: 32px; }
+}
+</style>
+
+<script>
+// تغییر طلبکار
+function changeCreditor() {
+    const select = document.getElementById('creditorSelect');
+    const creditorId = select.value;
+    if (creditorId) {
+        window.location.href = "{{ url_for('main_bp.creditor_transactions', creditor_id=0) }}".replace('0', creditorId);
+    }
+}
+
+// اعتبارسنجی مبلغ در فرم
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('transactionType');
+    const amountInput = document.getElementById('amount');
+    const submitBtn = document.getElementById('submitBtn');
+    const warningDiv = document.getElementById('amountWarning');
+    const currentDebt = parseFloat("{{ creditor.current_debt }}") || 0;
+    const cashBalance = parseFloat("{{ cash_balance|default(0) }}") || 0;
+    
+    function validateAmount() {
+        const amount = parseFloat(amountInput.value) || 0;
+        const transactionType = typeSelect.value;
+        
+        if (amount <= 0) {
+            warningDiv.style.display = 'block';
+            warningDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> مبلغ باید بزرگتر از صفر باشد';
+            warningDiv.style.color = '#f87171';
+            submitBtn.disabled = true;
+            return false;
+        }
+        
+        if (transactionType === 'payment') {
+            if (amount > currentDebt) {
+                warningDiv.style.display = 'block';
+                warningDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> مبلغ پرداختی بیشتر از قرض جاری است!';
+                warningDiv.style.color = '#f87171';
+                submitBtn.disabled = true;
+                return false;
+            }
+            
+            if (amount > cashBalance) {
+                warningDiv.style.display = 'block';
+                warningDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> موجودی صندوق کافی نیست! (موجودی: ' + cashBalance.toLocaleString() + ' افغانی)';
+                warningDiv.style.color = '#f87171';
+                submitBtn.disabled = true;
+                return false;
+            }
+        }
+        
+        warningDiv.style.display = 'none';
+        submitBtn.disabled = false;
+        return true;
+    }
+    
+    amountInput.addEventListener('input', validateAmount);
+    typeSelect.addEventListener('change', validateAmount);
+    
+    // کلید Enter در انتخابگر طلبکار
+    document.getElementById('creditorSelect').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') changeCreditor();
+    });
+});
+</script>
+{% endblock %}

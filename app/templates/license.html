@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}مدیریت لایسنس{% endblock %}
+
+{% block content %}
+<div class="license-page-wrapper">
+    <div class="container mt-5 fade-in license-container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="license-card">
+                    <div class="license-card-header">
+                        <h3 class="mb-0 text-center"><i class="fas fa-key"></i> مدیریت لایسنس</h3>
+                    </div>
+                    <div class="license-card-body">
+
+                        <div class="text-center mb-4">
+                            <span class="license-status-badge {% if expired %}expired{% else %}active{% endif %}">
+                                {% if expired %}<i class="fas fa-times-circle"></i> لایسنس منقضی شده
+                                {% else %}<i class="fas fa-check-circle"></i> لایسنس فعال{% endif %}
+                            </span>
+                            {% if not expired %}
+                            <div class="license-days-remaining mt-2">
+                                <i class="fas fa-clock"></i> <span>{{ remaining_days }}</span> روز باقی‌مانده
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="license-label"><i class="fas fa-microchip"></i> شناسه سخت‌افزاری:</label>
+                            <div class="license-hw-id">{{ hw_id }}</div>
+                            <div class="license-help"><i class="fas fa-info-circle"></i> این کد مخصوص این کامپیوتر است.</div>
+                        </div>
+
+                        <div class="license-activate-box">
+                            <h5 class="license-activate-title"><i class="fas fa-lock-open"></i> فعال‌سازی لایسنس جدید</h5>
+
+                            <form method="POST" action="{{ url_for('main_bp.activate_license') }}" id="licenseForm">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                                <div class="mb-3">
+                                    <label for="licenseKey" class="license-label">کد لایسنس 20 رقمی:</label>
+                                    <input type="text" name="license" class="form-control license-input"
+                                           placeholder="مثال: 3F7A8B2C1D9E4F5G6H7I" required autocomplete="off" id="licenseKey">
+                                    <div class="license-help">کد را با یا بدون خط تیره وارد کنید</div>
+                                </div>
+
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% if messages %}
+                                        {% for category, message in messages %}
+                                            <div class="license-{% if category == 'error' %}error{% else %}success{% endif %}">
+                                                <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% else %}check-circle{% endif %}"></i> {{ message }}
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endwith %}
+
+                                <button type="submit" class="license-btn-activate">
+                                    <i class="fas fa-check-circle"></i> فعال‌سازی لایسنس
+                                </button>
+
+                                {% if current_user.role == 'manager' %}
+                                <button type="button" class="license-btn-trial" onclick="createTrialLicense()">
+                                    <i class="fas fa-flask"></i> ایجاد لایسنس آزمایشی (30 روز)
+                                </button>
+                                {% endif %}
+                            </form>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                                <i class="fas fa-home"></i> بازگشت به صفحه اصلی
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.license-page-wrapper { width: 100%; }
+
+.license-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 20px;
+    overflow: hidden;
+}
+.license-card-header {
+    background: rgba(59, 130, 246, 0.2);
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.license-card-header h3 { color: #FFD700; margin: 0; }
+.license-card-body { padding: 25px; }
+
+.license-status-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-weight: 600;
+}
+.license-status-badge.active { background: rgba(40, 167, 69, 0.2); border: 1px solid rgba(40, 167, 69, 0.3); color: #4ade80; }
+.license-status-badge.expired { background: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.3); color: #f87171; }
+
+.license-days-remaining { color: #FFD700; font-size: 18px; font-weight: bold; }
+
+.license-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.license-label::before { content: "◉ "; color: #06b6d4; }
+
+.license-hw-id {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    direction: ltr;
+    font-family: monospace;
+    font-size: 14px;
+    color: #FFD700;
+    word-break: break-all;
+}
+
+.license-help { color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-top: 5px; }
+
+.license-activate-box {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 20px;
+}
+.license-activate-title { color: #FFD700; margin-bottom: 15px; }
+
+.license-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 12px;
+    direction: ltr;
+    font-family: monospace;
+    font-size: 16px;
+}
+.license-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+
+.license-btn-activate {
+    width: 100%;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+.license-btn-activate:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3); }
+
+.license-btn-trial {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin-top: 10px;
+}
+.license-btn-trial:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+
+.license-error { background: rgba(220, 53, 69, 0.2); border: 1px solid rgba(220, 53, 69, 0.3); color: #f87171; padding: 12px; border-radius: 10px; margin: 15px 0; }
+.license-success { background: rgba(40, 167, 69, 0.2); border: 1px solid rgba(40, 167, 69, 0.3); color: #4ade80; padding: 12px; border-radius: 10px; margin: 15px 0; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+
+<script>
+document.getElementById('licenseForm')?.addEventListener('submit', function(e) {
+    const licenseKey = document.getElementById('licenseKey').value.trim();
+    const cleanKey = licenseKey.replace(/[-_\s]/g, '').toUpperCase();
+    if (cleanKey.length !== 20) {
+        e.preventDefault();
+        alert('❌ کد لایسنس باید 20 کاراکتر باشد (شما ' + cleanKey.length + ' کاراکتر وارد کرده‌اید)');
+        return;
+    }
+    if (!/^[A-Z0-9]+$/.test(cleanKey)) {
+        e.preventDefault();
+        alert('❌ کد لایسنس فقط می‌تواند شامل حروف بزرگ و اعداد باشد');
+        return;
+    }
+    document.getElementById('licenseKey').value = cleanKey;
+});
+function createTrialLicense() {
+    if (confirm('آیا از ایجاد لایسنس آزمایشی 30 روزه مطمئن هستید؟')) {
+        window.location.href = "{{ url_for('main_bp.create_trial_license') }}";
+    }
+}
+</script>
+{% endblock %}

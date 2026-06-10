@@ -1,0 +1,593 @@
+{% extends "base.html" %}
+{% block title %}لیست محصولات{% endblock %}
+
+{% block content %}
+<div class="products-page-wrapper">
+    <div class="container mt-4 fade-in products-container">
+        <h1 class="text-center mb-4 products-title">📦 لیست محصولات</h1>
+
+        <!-- آمار -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="products-stat-card">
+                    <small class="stat-label">📦 تعداد محصولات</small>
+                    <div><span class="badge bg-success fs-5 mt-1">{{ products|length if products else 0 }}</span></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="products-stat-card">
+                    <small class="stat-label">⚠️ موجودی کم</small>
+                    <div><span class="badge bg-warning fs-5 mt-1">{{ products|selectattr('total_items', 'lt', 5)|list|length if products else 0 }}</span></div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="products-stat-card">
+                    <small class="stat-label">💰 ارزش کل</small>
+                    <div><span class="badge bg-info fs-6 mt-1">{{ "{:,.0f}".format(products|sum(attribute='selling_price') or 0) }}</span></div>
+                    <small class="stat-unit">افغانی</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="products-stat-card">
+                    <small class="stat-label">🌍 محصولات خارجی</small>
+                    <div><span class="badge bg-primary fs-5 mt-1">{{ products|selectattr('is_foreign', 'equalto', True)|list|length if products else 0 }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- دکمه‌های سریع -->
+        <div class="products-card mb-4">
+            <div class="products-card-body">
+                <div class="row g-2">
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('main_bp.expiring_soon_products') }}" class="btn btn-danger w-100">🕒 کم تاریخ و تاریخ گذشته</a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('main_bp.inventory_write_off') }}" class="products-btn-purple w-100">📉 استاک‌اوت</a>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-info w-100">🔄 نمایش همه</a>
+                    </div>
+                    {% if request.args.get('search') %}
+                    <div class="col-md-3 col-6">
+                        <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary w-100">❌ پاک کردن فیلتر</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- بخش اسکنر جستجو -->
+        <div class="products-card mb-4 products-scanner-card">
+            <div class="products-card-header">
+                <h5 class="mb-0"><i class="fas fa-barcode"></i> جستجو با اسکنر</h5>
+            </div>
+            <div class="products-card-body">
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <input type="text" id="barcodeScanner" class="form-control products-input" placeholder="بارکد را اسکن کنید..." autocomplete="off" autofocus>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-info flex-grow-1" onclick="searchByBarcode()"><i class="fas fa-search"></i> جستجو</button>
+                            <button type="button" class="btn btn-secondary" onclick="clearSearch()"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div id="barcodeMessage" class="mt-2" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- جستجوی پیشرفته -->
+        <div class="products-card mb-4">
+            <div class="products-card-header products-card-header-secondary">
+                <h5 class="mb-0">🔍 جستجوی پیشرفته</h5>
+            </div>
+            <div class="products-card-body">
+                <form method="GET" action="{{ url_for('main_bp.list_products') }}" id="searchForm">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <input type="text" name="q" class="form-control products-input" placeholder="🔍 نام محصول، بارکد یا شماره بچ..." value="{{ request.args.get('q','') }}" id="searchInput">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="stock_status" class="form-select products-select">
+                                <option value="">همه وضعیت‌ها</option>
+                                <option value="low" {% if request.args.get('stock_status') == 'low' %}selected{% endif %}>موجودی کم</option>
+                                <option value="normal" {% if request.args.get('stock_status') == 'normal' %}selected{% endif %}>موجودی نرمال</option>
+                                <option value="out" {% if request.args.get('stock_status') == 'out' %}selected{% endif %}>تمام شده</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="expiry_status" class="form-select products-select">
+                                <option value="">وضعیت انقضا</option>
+                                <option value="expired" {% if request.args.get('expiry_status') == 'expired' %}selected{% endif %}>منقضی شده</option>
+                                <option value="soon" {% if request.args.get('expiry_status') == 'soon' %}selected{% endif %}>نزدیک انقضا</option>
+                                <option value="no_expiry" {% if request.args.get('expiry_status') == 'no_expiry' %}selected{% endif %}>بدون تاریخ</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">🔍 اعمال فیلتر</button>
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                      
+                        <div class="col-md-3">
+                            <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary w-100">❌ حذف فیلتر</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- دکمه‌ها -->
+        <div class="text-center mb-4">
+            <a href="{{ url_for('main_bp.add_product') }}" class="btn btn-success"><i class="fas fa-plus"></i> افزودن محصول جدید</a>
+            
+        </div>
+
+        <!-- جدول محصولات -->
+        {% if products %}
+        <div class="products-table-container">
+            <div class="products-table-header">
+                <h5 class="mb-0"><i class="fas fa-table"></i> لیست محصولات</h5>
+            </div>
+            <div class="products-table-body">
+                <div class="table-responsive">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 50px;">#</th>
+                                <th class="text-right">📦 نام محصول</th>
+                                <th class="text-center">📁 دسته</th>
+                                <th class="text-center">📊 موجودی</th>
+                                <th class="text-center">📏 واحد</th>
+                                <th class="text-center">📦 کارتن</th>
+                                <th class="text-center">🛒 خرید</th>
+                                <th class="text-center">🏷️ فروش</th>
+                                <th class="text-center">🔢 بچ</th>
+                                <th class="text-center">📅 انقضا</th>
+                                <th class="text-center">🔍 بارکد</th>
+                                <th class="text-center">🌍 خارجی</th>
+                                <th class="text-center">⚙️ عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            {% set total_items = product.total_items %}
+                            <tr id="product-{{ product.id }}" class="products-table-row"
+                                data-product-name="{{ product.name }}" 
+                                data-product-barcode="{{ product.barcode or '' }}"
+                                data-product-batch="{{ product.batch_no or '' }}">
+                                <td class="text-center fw-bold" style="color: #FFD700;">{{ loop.index }}</td>
+                                <td class="text-right fw-bold">
+                                    {{ product.name }}
+                                    {% if total_items == 0 %}
+                                    <span class="badge bg-danger ms-1">تمام شده</span>
+                                    {% elif total_items < product.min_stock|default(5) %}
+                                    <span class="badge bg-warning ms-1">کم موجود</span>
+                                    {% endif %}
+                                 </td>
+                                <td class="text-center"><span class="products-badge-secondary">{{ product.category or 'عمومی' }}</span></td>
+                                <td class="text-center">
+                                    <div class="stock-info">
+                                        {% if total_items == 0 %}
+                                            <span class="badge bg-danger">تمام شده</span>
+                                        {% elif total_items < product.min_stock|default(5) %}
+                                            <span class="badge bg-warning">{{ total_items|int }} عدد</span>
+                                        {% else %}
+                                            <span class="badge bg-success">{{ total_items|int }} عدد</span>
+                                        {% endif %}
+                                        <small class="products-small-text d-block mt-1" style="font-size: 10px;">
+                                            📦 {{ product.quantity|int }} کارتن × {{ product.items_per_carton|int }} = {{ (product.quantity|int * product.items_per_carton|int)|int }}
+                                            + 🔸 {{ product.single_quantity|int }} تک
+                                            = 🟢 {{ total_items|int }} کل
+                                        </small>
+                                    </div>
+                                </td>
+                                <td class="text-center"><span class="products-badge-secondary">{{ product.unit or 'عدد' }}</span></td>
+                                <td class="text-center"><span class="badge bg-info">{{ product.items_per_carton|int }} دانه/کارتن</span></td>
+                                <td class="text-center products-price-buying">{{ "{:,.0f}".format(product.buying_price or 0) }} <small>افغانی</small></td>
+                                <td class="text-center products-price-selling">{{ "{:,.0f}".format(product.selling_price or 0) }} <small>افغانی</small></td>
+                                <td class="text-center"><span class="badge bg-dark">{{ product.batch_no or '---' }}</span></td>
+                                <td class="text-center">
+                                    {% if product.expiry_date %}
+                                        {% set exp_date = product.expiry_date %}
+                                        {% set diff = (exp_date - today).days %}
+                                        <span class="badge {% if diff < 0 %}bg-danger{% elif diff <= 7 %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ exp_date.strftime('%Y-%m-%d') }}
+                                            {% if diff < 0 %} (منقضی){% elif diff <= 7 %} ({{ diff }} روز){% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">---</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if product.barcode %}
+                                    <span class="badge bg-info">{{ product.barcode[:12] }}...</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">---</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if product.is_foreign %}
+                                    <span class="badge bg-primary"><i class="fas fa-globe"></i> خارجی</span>
+                                    {% else %}
+                                    <span class="badge bg-success"><i class="fas fa-home"></i> داخلی</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('main_bp.inventory_write_off') }}?product_id={{ product.id }}" class="btn btn-sm btn-danger" title="ثبت استاک‌اوت"><i class="fas fa-skull-crossbones"></i></a>
+                                        <a href="{{ url_for('main_bp.edit_product', product_id=product.id) }}" class="btn btn-sm btn-warning" title="ویرایش"><i class="fas fa-edit"></i></a>
+                                        <form action="{{ url_for('main_bp.delete_product', product_id=product.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا از حذف «{{ product.name }}» مطمئن هستید؟')" title="حذف"><i class="fas fa-trash-alt"></i></button>
+                                        </form>
+                                    </div>
+                                </td>
+                             </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="products-footer mt-3 text-center">
+            <small class="text-muted">تعداد کل محصولات: {{ products|length }} | ارزش کل موجودی: {{ "{:,.0f}".format(products|sum(attribute='selling_price') or 0) }} افغانی</small>
+        </div>
+        {% else %}
+        <div class="products-empty-state">
+            <i class="fas fa-inbox fa-4x mb-3"></i>
+            <h3>📦 هیچ محصولی ثبت نشده است</h3>
+            <p class="mt-2">برای شروع، اولین محصول را اضافه کنید</p>
+            <a href="{{ url_for('main_bp.add_product') }}" class="btn btn-success mt-3"><i class="fas fa-plus"></i> افزودن محصول جدید</a>
+        </div>
+        {% endif %}
+
+        <!-- دکمه بازگشت -->
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary"><i class="fas fa-home"></i> بازگشت به خانه</a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* ===== استایل‌های قبلی (همان‌هایی که دارید) ===== */
+.products-page-wrapper { width: 100%; }
+
+.products-stat-card {
+    text-align: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.products-stat-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 215, 0, 0.4);
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    display: block;
+}
+
+.stat-unit {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    display: block;
+    margin-top: 5px;
+}
+
+.products-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.products-card-body { padding: 20px; }
+
+.products-card-header {
+    background: rgba(6, 182, 212, 0.2);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.products-card-header h5 { color: #FFD700; margin: 0; }
+
+.products-card-header-secondary { background: rgba(100, 116, 139, 0.2); }
+
+.products-scanner-card { border-color: rgba(6, 182, 212, 0.3); }
+
+.products-input, .products-select {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+    width: 100%;
+}
+
+.products-input:focus, .products-select:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+    outline: none;
+}
+
+.products-select option {
+    background: #1a1a2e !important;
+    color: #FFD700 !important;
+}
+
+.products-input::placeholder { color: rgba(255, 215, 0, 0.5); }
+
+.products-btn-purple {
+    display: inline-block;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid #8b5cf6;
+    color: #a78bfa;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.products-btn-purple:hover {
+    background: rgba(139, 92, 246, 0.3);
+    color: #c4b5fd;
+    transform: translateY(-2px);
+}
+
+.products-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.products-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.products-table-header h5 { color: #FFD700; margin: 0; }
+
+.products-table-body { padding: 0; overflow-x: auto; }
+
+.products-table { width: 100%; border-collapse: collapse; }
+
+.products-table thead th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 14px 10px;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.products-table thead th:first-child {
+    width: 50px;
+    text-align: center;
+}
+
+.products-table tbody tr {
+    border-bottom: 1px solid rgba(255, 215, 0, 0.08);
+    transition: all 0.2s ease;
+}
+
+.products-table tbody tr:hover { background: rgba(59, 130, 246, 0.15); }
+
+.products-table tbody td {
+    padding: 12px 10px;
+    color: #e2e8f0;
+    vertical-align: middle;
+}
+
+.products-table tbody td:first-child {
+    font-weight: bold;
+    color: #FFD700;
+}
+
+.products-table .text-right { text-align: right; }
+.products-table .text-center { text-align: center; }
+
+.products-badge-secondary {
+    background: rgba(100, 116, 139, 0.5);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    color: #e2e8f0;
+    display: inline-block;
+}
+
+.products-small-text {
+    display: block;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    margin-top: 3px;
+}
+
+.products-price-buying { color: #fbbf24; }
+.products-price-selling { color: #4ade80; font-weight: 600; }
+
+.products-footer {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.products-empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+}
+
+.products-empty-state i { color: rgba(255, 215, 0, 0.5); }
+.products-empty-state h3 { color: #FFD700; }
+.products-empty-state p { color: rgba(255, 255, 255, 0.6); }
+
+.stock-info { min-width: 140px; }
+.stock-info .badge { font-size: 12px; padding: 6px 10px; }
+.stock-info .products-small-text { font-size: 9px; line-height: 1.3; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@keyframes highlightPulse {
+    0% { background: rgba(16, 185, 129, 0.05); }
+    50% { background: rgba(16, 185, 129, 0.2); }
+    100% { background: rgba(16, 185, 129, 0.05); }
+}
+.highlight-row { animation: highlightPulse 1.5s ease infinite; }
+
+@media print {
+    .btn, .btn-group, .products-btn-purple, .products-card-header, .products-scanner-card, .products-footer {
+        display: none !important;
+    }
+    .products-table-container {
+        background: white !important;
+        border: 1px solid #ddd !important;
+    }
+    .products-table-header {
+        background: #f8f9fa !important;
+    }
+    .products-table-header h5 { color: black !important; }
+    .products-table thead th {
+        background: #f8f9fa !important;
+        color: black !important;
+    }
+    .products-table tbody td { color: black !important; }
+    .products-price-selling { color: #2e7d32 !important; }
+    .products-price-buying { color: #e65100 !important; }
+    .products-stat-card {
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+    }
+    .stat-label, .stat-unit { color: #666 !important; }
+}
+
+@media (max-width: 768px) {
+    .products-table thead th,
+    .products-table tbody td { font-size: 11px; padding: 8px 6px; }
+    .badge { font-size: 0.65rem; }
+    .products-card-body { padding: 15px; }
+}
+
+@media (max-width: 576px) {
+    .products-table thead th,
+    .products-table tbody td { font-size: 10px; padding: 6px 4px; }
+}
+</style>
+
+<script>
+let barcodeTimer = null;
+
+function searchByBarcode() {
+    const scannerInput = document.getElementById('barcodeScanner');
+    const barcode = scannerInput.value.trim();
+    if (!barcode) {
+        showBarcodeMessage('❌ لطفاً بارکد را وارد کنید', 'danger');
+        return;
+    }
+    scannerInput.disabled = true;
+    showBarcodeMessage('⏳ در حال جستجو...', 'info');
+    fetch(`/api/product/barcode/${encodeURIComponent(barcode)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const product = data.product;
+                document.getElementById('searchInput').value = product.name;
+                document.getElementById('searchForm').submit();
+                showBarcodeMessage(`✅ محصول "${product.name}" پیدا شد`, 'success');
+            } else {
+                showBarcodeMessage(`❌ محصول با بارکد "${barcode}" یافت نشد`, 'danger');
+                scannerInput.value = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showBarcodeMessage('❌ خطا در ارتباط با سرور', 'danger');
+        })
+        .finally(() => {
+            scannerInput.disabled = false;
+            scannerInput.focus();
+        });
+}
+
+function clearSearch() {
+    document.getElementById('barcodeScanner').value = '';
+    document.getElementById('barcodeScanner').focus();
+    document.getElementById('barcodeMessage').style.display = 'none';
+}
+
+function showBarcodeMessage(message, type) {
+    const msgDiv = document.getElementById('barcodeMessage');
+    const alertClass = type === 'danger' ? 'alert-danger' : (type === 'success' ? 'alert-success' : 'alert-info');
+    msgDiv.className = `alert ${alertClass} mt-2`;
+    msgDiv.innerHTML = message;
+    msgDiv.style.display = 'block';
+    setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+}
+
+function setupBarcodeListener() {
+    const scannerInput = document.getElementById('barcodeScanner');
+    if (!scannerInput) return;
+    scannerInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); searchByBarcode(); }
+    });
+    let inputTimer = null, inputValue = '';
+    scannerInput.addEventListener('input', function(e) {
+        const currentValue = this.value;
+        if (inputTimer) clearTimeout(inputTimer);
+        if (currentValue.length > inputValue.length && currentValue.length >= 5) {
+            inputTimer = setTimeout(() => { if (this.value === currentValue) searchByBarcode(); }, 500);
+        }
+        inputValue = currentValue;
+    });
+}
+
+function highlightSearchedProduct() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get('q');
+    if (searchQuery) {
+        const rows = document.querySelectorAll('.products-table tbody tr');
+        rows.forEach(row => {
+            const productName = row.getAttribute('data-product-name');
+            const productBarcode = row.getAttribute('data-product-barcode');
+            const productBatch = row.getAttribute('data-product-batch');
+            if ((productName && productName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (productBarcode && productBarcode.includes(searchQuery)) ||
+                (productBatch && productBatch.includes(searchQuery))) {
+                row.classList.add('highlight-row');
+                setTimeout(() => { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500);
+            }
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setupBarcodeListener();
+    highlightSearchedProduct();
+    setTimeout(() => { const scannerInput = document.getElementById('barcodeScanner'); if (scannerInput) scannerInput.focus(); }, 500);
+});
+</script>
+{% endblock %}

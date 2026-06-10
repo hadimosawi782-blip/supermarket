@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+{% block title %}افزودن محصول{% endblock %}
+
+{% block content %}
+<div class="addproduct-page-wrapper">
+    <div class="container mt-4 fade-in addproduct-container">
+        <h1 class="text-center mb-4 addproduct-title">📦 افزودن محصول جدید</h1>
+
+        <div class="addproduct-card">
+            <div class="addproduct-card-header">
+                <h5 class="mb-0"><i class="fas fa-box"></i> اطلاعات محصول</h5>
+            </div>
+            <div class="addproduct-card-body">
+
+                <!-- اسکنر بارکد (اختیاری) -->
+                <div class="addproduct-card addproduct-scanner-card mb-4">
+                    <div class="addproduct-card-header">
+                        <h5 class="mb-0"><i class="fas fa-barcode"></i> اسکنر بارکد <span class="text-muted">(اختیاری)</span></h5>
+                    </div>
+                    <div class="addproduct-card-body">
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <input type="text" id="barcodeScanner" class="form-control addproduct-input" 
+                                       placeholder="بارکد را اسکن کنید..." autocomplete="off">
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-info flex-grow-1" onclick="searchByBarcode()">
+                                        <i class="fas fa-search"></i> جستجو
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="generateBarcode()">
+                                        <i class="fas fa-random"></i> تولید بارکد
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="barcodeMessage" class="mt-2" style="display: none;"></div>
+                        <small class="text-muted">💡 بارکد اختیاری است، می‌توانید خالی بگذارید یا بعداً وارد کنید</small>
+                    </div>
+                </div>
+
+                <form method="POST" id="productForm">
+                    {{ form.hidden_tag() }}
+
+                    <!-- ردیف 1: نام محصول و شماره بچ -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="addproduct-label">نام محصول <span class="text-danger">*</span></label>
+                            {{ form.name(class="form-control addproduct-input", id="productName", placeholder="مثال: شیر کاله") }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="addproduct-label">شماره بچ (Batch)</label>
+                            {{ form.batch_no(class="form-control addproduct-input", placeholder="اختیاری") }}
+                        </div>
+                    </div>
+
+                    <!-- ردیف 2: بارکد (اختیاری) -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-12">
+                            <label class="addproduct-label">بارکد محصول <span class="text-muted">(اختیاری)</span></label>
+                            {{ form.barcode(class="form-control addproduct-input", id="barcode", placeholder="بارکد 13 رقمی - اختیاری") }}
+                            <small class="text-muted">بارکد اختیاری است، در صورت وارد کردن باید یکتا باشد</small>
+                        </div>
+                    </div>
+
+                    <!-- ردیف 3: دسته بندی، حداقل موجودی، نوع محصول -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-4">
+                            <label class="addproduct-label">دسته بندی</label>
+                            {{ form.category(class="form-control addproduct-input") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="addproduct-label">حداقل موجودی (هشدار)</label>
+                            {{ form.min_stock(class="form-control addproduct-input", id="minStock", value="0", step="0.01") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="addproduct-label">محصول خارجی</label>
+                            <div class="mt-2">
+                                {{ form.is_foreign(class="form-check-input addproduct-checkbox", id="is_foreign") }}
+                                <label for="is_foreign" class="addproduct-checkbox-label">اگر محصول خارجی است</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ردیف 4: تعداد کارتن، تعداد در کارتن، تعداد تکی، واحد -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3">
+                            <label class="addproduct-label">تعداد کارتن</label>
+                            <input type="number" name="carton_quantity" id="cartonQuantity" 
+                                   class="form-control addproduct-input" step="0.01" value="0" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="addproduct-label">تعداد در کارتن</label>
+                            {{ form.items_per_carton(class="form-control addproduct-input", id="itemsPerCarton", value="1", step="0.01", min="0") }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="addproduct-label">تعداد تکی</label>
+                            <input type="number" name="single_quantity" id="singleQuantity" 
+                                   class="form-control addproduct-input" step="0.01" value="0" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="addproduct-label">واحد</label>
+                            {{ form.unit(class="form-control addproduct-input", id="unit") }}
+                        </div>
+                    </div>
+
+                    <!-- ردیف 5: تعداد کل، قیمت خرید، قیمت فروش (واحد: افغانی) -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-4">
+                            <label class="addproduct-label">📊 تعداد کل (کارتن + تکی)</label>
+                            {{ form.quantity(class="form-control addproduct-input", id="quantity", readonly=True, style="background:#1a1a2e; font-weight:bold;") }}
+                            <small class="text-muted">محاسبه خودکار</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="addproduct-label">💰 قیمت خرید <span class="text-danger">*</span> (افغانی)</label>
+                            {{ form.buying_price(class="form-control addproduct-input", id="buyingPrice", step="0.01", min="0", placeholder="مبلغ به افغانی") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="addproduct-label">💵 قیمت فروش <span class="text-danger">*</span> (افغانی)</label>
+                            {{ form.selling_price(class="form-control addproduct-input", id="sellingPrice", step="0.01", min="0", placeholder="مبلغ به افغانی") }}
+                        </div>
+                    </div>
+
+                    <!-- ردیف 6: تاریخ انقضا، نوع خرید، طلبکار -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-4">
+                            <label class="addproduct-label">📅 تاریخ انقضا</label>
+                            {{ form.expiry_date(class="form-control addproduct-input", type="date") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="addproduct-label">🔄 نوع خرید</label>
+                            {{ form.purchase_type(class="form-control addproduct-input", id="purchaseType") }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="addproduct-label">🏢 طلبکار (Creditor)</label>
+                            {{ form.creditor_id(class="form-control addproduct-input", id="creditorId") }}
+                        </div>
+                    </div>
+
+                    <!-- ردیف 7: توضیحات خرید -->
+                    <div class="mt-3">
+                        <label class="addproduct-label">📝 توضیحات خرید</label>
+                        {{ form.purchase_description(class="form-control addproduct-input", rows=3, placeholder="توضیحات اضافی...") }}
+                    </div>
+
+                    <!-- نکته -->
+                    <div class="addproduct-note mt-4">
+                        <i class="fas fa-info-circle"></i> ℹ️ 
+                        <strong>نکات مهم:</strong>
+                        <ul class="mt-2 mb-0">
+                            <li>✅ بارکد محصول <strong>اختیاری</strong> است - در صورت وارد کردن باید یکتا باشد</li>
+                            <li>💰 واحد پول: <strong>افغانی (AFN)</strong></li>
+                            <li>📊 تعداد کل به صورت خودکار از مجموع (تعداد کارتن × تعداد در کارتن + تعداد تکی) محاسبه می‌شود</li>
+                            <li>🔄 اگر نوع خرید "قرضی" انتخاب شود، مبلغ به حساب طلبکار اضافه می‌شود</li>
+                            <li>🌍 برای محصولات خارجی، حتماً گزینه "محصول خارجی" را فعال کنید</li>
+                        </ul>
+                    </div>
+
+                    <!-- دکمه‌ها -->
+                    <div class="text-center mt-4">
+                        <button class="btn btn-success px-5" type="submit" id="submitBtn">
+                            <i class="fas fa-save"></i> 💾 ثبت محصول
+                        </button>
+                        <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary px-5">
+                            <i class="fas fa-times"></i> ❌ انصراف
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> ↩️ بازگشت به لیست محصولات
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.addproduct-page-wrapper { width: 100%; }
+
+.addproduct-title { color: #FFD700; }
+
+.addproduct-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.addproduct-card-header {
+    background: rgba(6, 182, 212, 0.2);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.addproduct-card-header h5 { color: #FFD700; margin: 0; }
+
+.addproduct-card-body { padding: 20px; }
+
+.addproduct-scanner-card { border-color: rgba(6, 182, 212, 0.3); }
+
+.addproduct-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+    width: 100%;
+}
+
+.addproduct-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+    outline: none;
+}
+
+.addproduct-input[readonly] {
+    background: #1a1a2e !important;
+    cursor: not-allowed;
+}
+
+.addproduct-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.addproduct-label::before { content: "◉ "; color: #06b6d4; }
+
+.addproduct-checkbox {
+    width: 22px;
+    height: 22px;
+    margin-left: 8px;
+}
+
+.addproduct-checkbox-label { color: #FFD700; }
+
+.addproduct-note {
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: white;
+}
+
+.addproduct-note ul {
+    padding-right: 20px;
+}
+
+.addproduct-note li {
+    margin: 5px 0;
+}
+
+.text-danger {
+    color: #ff6b6b !important;
+}
+
+.text-muted {
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-size: 12px;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .addproduct-card-body { padding: 15px; }
+    .row.g-3 > div { margin-bottom: 10px; }
+}
+</style>
+
+<script>
+// تولید بارکد تصادفی
+function generateBarcode() {
+    const barcode = '626' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+    document.getElementById('barcode').value = barcode;
+    document.getElementById('barcodeScanner').value = barcode;
+}
+
+// محاسبه تعداد کل
+function calculateTotalQuantity() {
+    const cartons = parseFloat(document.getElementById('cartonQuantity')?.value) || 0;
+    const itemsPerCarton = parseFloat(document.getElementById('itemsPerCarton')?.value) || 0;
+    const singleQuantity = parseFloat(document.getElementById('singleQuantity')?.value) || 0;
+    
+    const total = (cartons * itemsPerCarton) + singleQuantity;
+    
+    document.getElementById('quantity').value = total.toFixed(2);
+}
+
+// جستجو با بارکد (اختیاری)
+async function searchByBarcode() {
+    const barcode = document.getElementById('barcodeScanner').value.trim();
+    const messageDiv = document.getElementById('barcodeMessage');
+    
+    if (!barcode) {
+        messageDiv.style.display = 'block';
+        messageDiv.innerHTML = '<div class="alert alert-warning">⚠️ لطفاً بارکد را وارد کنید</div>';
+        setTimeout(() => messageDiv.style.display = 'none', 2000);
+        return;
+    }
+    
+    messageDiv.style.display = 'block';
+    messageDiv.innerHTML = '<div class="alert alert-info">🔍 در حال جستجو...</div>';
+    
+    try {
+        const response = await fetch(`/api/products/by-barcode/${barcode}`);
+        const data = await response.json();
+        
+        if (response.ok && data.found) {
+            messageDiv.innerHTML = `<div class="alert alert-danger">⚠️ محصول با بارکد ${barcode} قبلاً وجود دارد! بارکد دیگری وارد کنید</div>`;
+            document.getElementById('barcode').value = '';
+            document.getElementById('barcode').focus();
+        } else {
+            messageDiv.innerHTML = '<div class="alert alert-success">✅ بارکد قابل استفاده است</div>';
+            document.getElementById('barcode').value = barcode;
+        }
+    } catch (error) {
+        messageDiv.innerHTML = '<div class="alert alert-success">✅ بارکد قابل استفاده است</div>';
+        document.getElementById('barcode').value = barcode;
+    }
+    
+    setTimeout(() => messageDiv.style.display = 'none', 3000);
+}
+
+// اعتبارسنجی فرم قبل از ارسال
+function validateForm() {
+    const productName = document.getElementById('productName')?.value.trim();
+    const buyingPrice = parseFloat(document.getElementById('buyingPrice')?.value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('sellingPrice')?.value) || 0;
+    const quantity = parseFloat(document.getElementById('quantity')?.value) || 0;
+    
+    if (!productName) {
+        showToast('❌ لطفاً نام محصول را وارد کنید', 'error');
+        document.getElementById('productName').focus();
+        return false;
+    }
+    
+    if (buyingPrice <= 0) {
+        showToast('❌ لطفاً قیمت خرید معتبر وارد کنید (به افغانی)', 'error');
+        document.getElementById('buyingPrice').focus();
+        return false;
+    }
+    
+    if (sellingPrice <= 0) {
+        showToast('❌ لطفاً قیمت فروش معتبر وارد کنید (به افغانی)', 'error');
+        document.getElementById('sellingPrice').focus();
+        return false;
+    }
+    
+    if (sellingPrice < buyingPrice) {
+        showToast('⚠️ قیمت فروش نباید از قیمت خرید کمتر باشد!', 'error');
+        document.getElementById('sellingPrice').focus();
+        return false;
+    }
+    
+    if (quantity <= 0) {
+        showToast('⚠️ تعداد محصول باید بیشتر از صفر باشد!', 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+// نمایش پیام (Toast)
+function showToast(message, type = 'success') {
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 3000);
+}
+
+// رویدادهای ورودی
+document.addEventListener('DOMContentLoaded', function() {
+    const itemsPerCarton = document.getElementById('itemsPerCarton');
+    const cartonQuantity = document.getElementById('cartonQuantity');
+    const singleQuantity = document.getElementById('singleQuantity');
+    const form = document.getElementById('productForm');
+    
+    if (itemsPerCarton) itemsPerCarton.addEventListener('input', calculateTotalQuantity);
+    if (cartonQuantity) cartonQuantity.addEventListener('input', calculateTotalQuantity);
+    if (singleQuantity) singleQuantity.addEventListener('input', calculateTotalQuantity);
+    
+    // اعتبارسنجی قبل از ارسال
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // اسکنر بارکد با Enter
+    const scanner = document.getElementById('barcodeScanner');
+    if (scanner) {
+        scanner.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchByBarcode();
+            }
+        });
+    }
+    
+    // محاسبه اولیه
+    calculateTotalQuantity();
+});
+</script>
+
+<style>
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2d2d44;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: none;
+    z-index: 9999;
+    animation: fadeInUp 0.3s ease;
+}
+.toast.error {
+    background: #dc3545;
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<div id="toast" class="toast"></div>
+
+{% endblock %}

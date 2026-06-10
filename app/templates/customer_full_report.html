@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>گزارش کامل مشتری - {{ customer.name }}</title>
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+                font-size: 12px;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        
+        body { 
+            font-family: 'Tahoma', 'Arial', sans-serif; 
+            direction: rtl; 
+            padding: 20px;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .report-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 3px solid #333;
+            margin-bottom: 30px;
+        }
+        .customer-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-right: 4px solid #007bff;
+        }
+        .summary-cards {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .summary-card {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            border-top: 4px solid #28a745;
+        }
+        .summary-card.debt {
+            border-top-color: #dc3545;
+        }
+        .summary-card.payments {
+            border-top-color: #17a2b8;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section-title {
+            background: #343a40;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #495057;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .print-btn {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            padding: 12px 25px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-print {
+            background-color: #17a2b8;
+            color: white;
+        }
+        .btn-back {
+            background-color: #6c757d;
+            color: white;
+        }
+        .timestamp {
+            text-align: left;
+            color: #6c757d;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <!-- هدر گزارش -->
+        <div class="header">
+            <h1>فروشگاه ما</h1>
+            <p>آدرس: کابل، افغانستان | تلفن: ۰۷۰۰۱۲۳۴۵۶</p>
+            <h2>گزارش کامل تاریخچه معاملات</h2>
+            <p>تاریخ تهیه گزارش: {% if now %}{{ now|persian_date }}{% endif %}</p>
+        </div>
+
+        <!-- اطلاعات مشتری -->
+        <div class="customer-info">
+            <h3>اطلاعات مشتری</h3>
+            <p><strong>نام کامل:</strong> {{ customer.name }}</p>
+            <p><strong>شماره تماس:</strong> {{ customer.phone or 'ثبت نشده' }}</p>
+            <p><strong>آدرس:</strong> {{ customer.address or 'ثبت نشده' }}</p>  <!-- این خط اضافه شد -->
+            <p><strong>تعداد بل ها:</strong> {{ sales|length }} بل</p>
+        </div>
+
+        <!-- کارت‌های خلاصه -->
+        <div class="summary-cards">
+            <div class="summary-card">
+                <h4>مجموع خریدها</h4>
+                <p style="font-size: 24px; margin: 10px 0; color: #28a745;">
+                    {{ "{:,.0f}".format(total_sales_amount) }} افغانی
+                </p>
+            </div>
+            <div class="summary-card">
+                <h4>مجموع پرداختی‌ها</h4>
+                <p style="font-size: 24px; margin: 10px 0; color: #17a2b8;">
+                    {{ "{:,.0f}".format(total_paid + total_debt_payments) }} افغانی
+                </p>
+                <small>(بل ها: {{ "{:,.0f}".format(total_paid) }} + پرداخت بدهی: {{ "{:,.0f}".format(total_debt_payments) }})</small>
+            </div>
+            <div class="summary-card debt">
+                <h4>قرض فعلی</h4>
+                <p style="font-size: 24px; margin: 10px 0; color: #dc3545;">
+                    {{ "{:,.0f}".format(current_debt) }} افغانی
+                </p>
+            </div>
+        </div>
+
+        <!-- بخش بلها -->
+        <div class="section">
+            <div class="section-title">
+                <h3 style="margin: 0;">تاریخچه بل ها ({{ sales|length }} بل)</h3>
+            </div>
+            
+            {% if sales %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ردیف</th>
+                        <th>شماره بل</th>
+                        <th>تاریخ</th>
+                        <th>مبلغ کل</th>
+                        <th>پرداخت شده</th>
+                        <th>باقیمانده</th>
+                        <th>وضعیت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ sale.invoice_number }}</td>
+                        <td>{{ sale.date|persian_datetime }}</td>
+                        <td>{{ "{:,.0f}".format(sale.total_amount) }}</td>
+                        <td>{{ "{:,.0f}".format(sale.amount_paid) }}</td>
+                        <td class="{{ 'negative' if sale.remaining_debt > 0 else 'positive' }}">
+                            {{ "{:,.0f}".format(sale.remaining_debt) }}
+                        </td>
+                        <td>
+                            {% if sale.remaining_debt == 0 %}
+                                <span class="positive">✅ تسویه</span>
+                            {% else %}
+                                <span class="negative">⏳ بدهکار</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background-color: #e9ecef; font-weight: bold;">
+                        <td colspan="3">جمع کل:</td>
+                        <td>{{ "{:,.0f}".format(total_sales_amount) }}</td>
+                        <td>{{ "{:,.0f}".format(total_paid) }}</td>
+                        <td>{{ "{:,.0f}".format(total_remaining_debt) }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p style="text-align: center; color: #6c757d; padding: 20px;">بل ثبت نشده است.</p>
+            {% endif %}
+        </div>
+
+        <!-- بخش پرداخت‌های قرض -->
+        <div class="section">
+            <div class="section-title">
+                <h3 style="margin: 0;">تاریخچه پرداخت‌های قرض ({{ payments|length }} پرداخت)</h3>
+            </div>
+            
+            {% if payments %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ردیف</th>
+                        <th>تاریخ پرداخت</th>
+                        <th>مبلغ پرداختی</th>
+                        <th>نوع پرداخت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ payment.date|persian_date }}</td>
+                        <td class="positive">{{ "{:,.0f}".format(payment.amount) }} افغانی</td>
+                        <td>پرداخت بدهی</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr style="background-color: #e9ecef; font-weight: bold;">
+                        <td colspan="2">جمع کل پرداخت‌ها:</td>
+                        <td colspan="2">{{ "{:,.0f}".format(total_debt_payments) }} افغانی</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p style="text-align: center; color: #6c757d; padding: 20px;">هیچ پرداخت قرض ثبت نشده است.</p>
+            {% endif %}
+        </div>
+
+        <!-- خلاصه نهایی -->
+        <div class="customer-info" style="background: #fff3cd; border-right-color: #ffc107;">
+            <h3>خلاصه نهایی وضعیت مالی</h3>
+            <p><strong>کل مبالغ دریافتی از مشتری:</strong> {{ "{:,.0f}".format(total_paid + total_debt_payments) }} افغانی</p>
+            <p><strong>کل مبلغ بل ها:</strong> {{ "{:,.0f}".format(total_sales_amount) }} افغانی</p>
+            <p><strong>قرض باقیمانده:</strong> 
+                <span class="{{ 'negative' if current_debt > 0 else 'positive' }}">
+                    {{ "{:,.0f}".format(current_debt) }} افغانی
+                </span>
+            </p>
+            <p><strong>وضعیت:</strong> 
+                {% if current_debt == 0 %}
+                    <span class="positive">✅ کاملاً تسویه شده</span>
+                {% elif current_debt > 0 %}
+                    <span class="negative">⏳ مشتری بدهکار است</span>
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- دکمه‌ها -->
+        <div class="print-btn no-print">
+            <button onclick="window.print()" class="btn btn-print">🖨️ چاپ گزارش</button>
+            <a href="{{ url_for('main_bp.list_customers') }}" class="btn btn-back">🔙 بازگشت به لیست مشتریان</a>
+        </div>
+
+        <div class="timestamp no-print">
+            گزارش تولید شده در: <span id="current-time"></span>
+        </div>
+    </div>
+
+    <script>
+        // نمایش زمان فعلی
+        document.getElementById('current-time').textContent = new Date().toLocaleString('fa-IR');
+    </script>
+</body>
+</html>

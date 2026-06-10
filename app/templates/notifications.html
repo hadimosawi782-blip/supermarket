@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}اعلان‌های سیستم{% endblock %}
+
+{% block content %}
+<div class="notifications-page-wrapper">
+    <div class="container mt-4 fade-in notifications-container">
+        <h1 class="text-center mb-4 notifications-title"><i class="fas fa-bell"></i> اعلان‌های سیستم</h1>
+
+        <!-- آمار اعلان‌ها -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4"><div class="notifications-stat-card"><small>کل اعلان‌ها</small><h3>{{ notifications|length }}</h3></div></div>
+            <div class="col-md-4"><div class="notifications-stat-card success"><small>خوانده نشده</small><h3>{{ unread_count }}</h3></div></div>
+            <div class="col-md-4"><div class="notifications-stat-card danger"><small>فوری</small><h3>{{ urgent_count }}</h3></div></div>
+        </div>
+
+        <div class="notifications-list">
+            {% if notifications %}
+                {% for notification in notifications %}
+                <div class="notification-item {% if not notification.is_read %}unread{% endif %} {% if notification.is_urgent %}urgent{% endif %}"
+                     data-id="{{ notification.id }}" onclick="markAsRead(this, {{ notification.id }})">
+                    <div class="notification-content">
+                        <div class="notification-badges">
+                            {% if notification.type == 'low_stock' %}<span class="notif-badge low-stock"><i class="fas fa-exclamation-triangle"></i> موجودی کم</span>{% endif %}
+                            {% if notification.type == 'expiring' %}<span class="notif-badge expiring"><i class="fas fa-clock"></i> نزدیک انقضا</span>{% endif %}
+                            {% if notification.is_urgent %}<span class="notif-badge urgent">فوری</span>{% endif %}
+                        </div>
+                        <h5 class="notification-title">{{ notification.title }}</h5>
+                        <p class="notification-message">{{ notification.message }}</p>
+                        <div class="notification-time"><i class="fas fa-clock"></i> {{ notification.created_at|persian_datetime }}</div>
+                    </div>
+                    {% if not notification.is_read %}<div class="notification-unread-badge">جدید</div>{% endif %}
+                    {% if notification.product_id %}
+                    <a href="{{ url_for('main_bp.edit_product', product_id=notification.product_id) }}" class="notification-link" onclick="event.stopPropagation()">مشاهده محصول</a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="notifications-empty">
+                    <i class="fas fa-bell-slash fa-4x mb-3"></i>
+                    <h3>هیچ اعلانی وجود ندارد</h3>
+                    <p>همه چیز عادی است!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.notifications-page-wrapper { width: 100%; }
+.notifications-title { color: #FFD700; }
+
+.notifications-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.notifications-stat-card small { color: rgba(255, 255, 255, 0.6); display: block; }
+.notifications-stat-card h3 { color: #FFD700; margin: 10px 0 0; }
+.notifications-stat-card.success { border-top: 4px solid #4ade80; }
+.notifications-stat-card.danger { border-top: 4px solid #f87171; }
+
+.notifications-list { display: flex; flex-direction: column; gap: 12px; }
+
+.notification-item {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    padding: 18px;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+}
+.notification-item:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(5px); }
+.notification-item.unread { border-right: 4px solid #4ade80; background: rgba(40, 167, 69, 0.08); }
+.notification-item.urgent { border-right: 4px solid #f87171; background: rgba(220, 53, 69, 0.08); }
+
+.notification-content { padding-left: 80px; }
+.notification-badges { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.notif-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+.notif-badge.low-stock { background: rgba(255, 193, 7, 0.2); color: #fbbf24; }
+.notif-badge.expiring { background: rgba(23, 162, 184, 0.2); color: #22d3ee; }
+.notif-badge.urgent { background: rgba(220, 53, 69, 0.2); color: #f87171; }
+.notification-title { color: #FFD700; margin: 0 0 5px; font-size: 16px; }
+.notification-message { color: rgba(255, 255, 255, 0.8); margin: 0 0 8px; font-size: 13px; }
+.notification-time { color: rgba(255, 255, 255, 0.5); font-size: 11px; }
+.notification-unread-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #4ade80;
+    color: #1a1a2e;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: bold;
+}
+.notification-link {
+    display: inline-block;
+    margin-top: 10px;
+    color: #22d3ee;
+    font-size: 12px;
+    text-decoration: none;
+}
+.notification-link:hover { text-decoration: underline; }
+
+.notifications-empty { text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; }
+.notifications-empty h3 { color: #FFD700; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .notification-content { padding-left: 0; }
+    .notification-unread-badge { position: static; display: inline-block; margin-bottom: 8px; }
+}
+</style>
+
+<script>
+function markAsRead(element, notificationId) {
+    fetch(`/notifications/mark-read/${notificationId}`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+    })
+    .then(response => response.json())
+    .then(data => { if (data.success) element.classList.remove('unread'); })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %}

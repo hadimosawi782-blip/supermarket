@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}جزئیات مشتری - {{ customer.name }}{% endblock %}
+
+{% block content %}
+<div class="customerdetail-page-wrapper">
+    <div class="container mt-4 fade-in customerdetail-container">
+        <h1 class="text-center mb-4 customerdetail-title">جزئیات مشتری: {{ customer.name }}</h1>
+
+        <!-- اطلاعات مشتری -->
+        <div class="customerdetail-info-card">
+            <h5 class="customerdetail-section-title"><i class="fas fa-user-circle"></i> اطلاعات مشتری</h5>
+            <div class="row">
+                <div class="col-md-6"><span class="customerdetail-label">نام:</span> {{ customer.name }}</div>
+                <div class="col-md-6"><span class="customerdetail-label">شماره تماس:</span> {{ customer.phone or '-' }}</div>
+                <div class="col-md-6"><span class="customerdetail-label">آدرس:</span> {{ customer.address or '-' }}</div>
+                <div class="col-md-6"><span class="customerdetail-label">قرض داری فعلی:</span> 
+                    <span class="{% if customer.total_debt > 0 %}text-danger{% else %}text-success{% endif %} fw-bold">
+                        {{ "{:,.0f}".format(customer.total_debt) }} افغانی
+                    </span>
+                </div>
+            </div>
+            <div class="mt-3">
+                {% if customer.total_debt > 0 %}
+                <a href="{{ url_for('main_bp.pay_debt', customer_id=customer.id) }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-hand-holding-usd"></i> 💳 پرداخت بدهی
+                </a>
+                {% endif %}
+                <a href="{{ url_for('main_bp.customer_full_report', customer_id=customer.id) }}" class="btn btn-info btn-sm" target="_blank">
+                    <i class="fas fa-chart-line"></i> 📊 گزارش کامل
+                </a>
+            </div>
+        </div>
+
+        <!-- تاریخچه پرداخت‌های قرض -->
+        <div class="customerdetail-card mt-4">
+            <h5 class="customerdetail-section-title"><i class="fas fa-money-bill-wave"></i> 💳 تاریخچه پرداخت‌های قرض</h5>
+            {% if payments %}
+            <div class="table-responsive">
+                <table class="customerdetail-table">
+                    <thead><tr><th>تاریخ</th><th>مبلغ پرداختی</th><th>بل نمبر رسید</th><th>ثبت شده توسط</th></tr></thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.date|persian_date }}</td>
+                            <td class="text-success fw-bold">{{ "{:,.0f}".format(payment.amount) }}</td>
+                            <td>{% if payment.receipt_number %}<span class="customerdetail-receipt">📄 {{ payment.receipt_number }}</span>{% else %}-{% endif %}</td>
+                            <td><span class="customerdetail-user">👤 {{ payment.user.full_name if payment.user else 'سیستم' }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="customerdetail-empty"><p>📝 هیچ پرداختی ثبت نشده است</p></div>
+            {% endif %}
+        </div>
+
+        <!-- تاریخچه فروشات -->
+        <div class="customerdetail-card mt-4">
+            <h5 class="customerdetail-section-title"><i class="fas fa-shopping-cart"></i> 📋 تاریخچه فروشات</h5>
+            {% if sales %}
+            <div class="table-responsive">
+                <table class="customerdetail-table">
+                    <thead><tr><th>شماره بل</th><th>تاریخ</th><th>مبلغ کل</th><th>پرداخت شده</th><th>بدهی</th><th>ثبت شده توسط</th></tr></thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td>{{ sale.invoice_number }}</td>
+                            <td>{{ sale.date|persian_datetime }}</td>
+                            <td>{{ "{:,.0f}".format(sale.total_amount) }}</td>
+                            <td>{{ "{:,.0f}".format(sale.amount_paid) }}</td>
+                            <td class="{% if sale.remaining_debt > 0 %}text-danger{% else %}text-success{% endif %}">{{ "{:,.0f}".format(sale.remaining_debt) }}</td>
+                            <td><span class="customerdetail-user">👤 {{ sale.user.full_name if sale.user else 'سیستم' }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="customerdetail-empty"><p>📝 هیچ فروشی ثبت نشده است</p></div>
+            {% endif %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.list_customers') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> 📋 بازگشت به لیست مشتریان
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.customerdetail-page-wrapper { width: 100%; }
+.customerdetail-title { color: #FFD700; }
+
+.customerdetail-info-card, .customerdetail-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.customerdetail-section-title {
+    color: #FFD700;
+    font-size: 16px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.customerdetail-label { color: rgba(255, 255, 255, 0.6); margin-left: 8px; }
+
+.customerdetail-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.customerdetail-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 10px;
+    font-size: 13px;
+}
+.customerdetail-table td {
+    padding: 8px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    font-size: 12px;
+}
+
+.customerdetail-receipt { background: rgba(41, 128, 185, 0.2); padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+.customerdetail-user { background: rgba(102, 126, 234, 0.2); padding: 3px 8px; border-radius: 12px; font-size: 11px; }
+
+.customerdetail-empty { text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.5); }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+</style>
+{% endblock %}

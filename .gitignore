@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+venv38/
+.env
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Uploads
+app/static/uploads/
+
+# License
+licenses/
+*.key
+
+# Build
+build/
+dist/
+
+# VS Code
+.vscode/
+
+# Backup
+*.bak
+*.backup
+*.zip
+
+# Logs
+*.log
+
+# PyInstaller
+*.spec

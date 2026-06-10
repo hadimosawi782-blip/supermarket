@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}مدیریت طلبکاران{% endblock %}
+
+{% block content %}
+<div class="creditors-page-wrapper">
+    <div class="container mt-4 fade-in creditors-container">
+        <h1 class="text-center mb-4 creditors-title">💰 مدیریت طلبکاران</h1>
+
+        <!-- کارت خلاصه آمار -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="creditors-stat-card danger">
+                    <small class="creditors-stat-label">💰 مجموع بدهی‌ها</small>
+                    <h3 class="creditors-stat-number">{{ "{:,.0f}".format(total_debt) }} افغانی</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="creditors-stat-card info">
+                    <small class="creditors-stat-label">👥 تعداد طلبکاران</small>
+                    <h3 class="creditors-stat-number">{{ creditors|length }}</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="creditors-stat-card warning">
+                    <small class="creditors-stat-label">🔄 قرض‌های فعال</small>
+                    <h3 class="creditors-stat-number">{{ active_loans|default(0) }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- دکمه‌های عملیات -->
+        <div class="creditors-actions mb-4">
+            <a href="{{ url_for('main_bp.add_creditor') }}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> ثبت طلبکار جدید
+            </a>
+            <a href="{{ url_for('main_bp.creditor_transactions', creditor_id=1) }}" class="btn btn-info">
+                <i class="fas fa-exchange-alt"></i> تراکنش طلبکاران
+            </a>
+            <button onclick="window.print()" class="btn btn-secondary">
+                <i class="fas fa-print"></i> چاپ گزارش
+            </button>
+        </div>
+
+        {% if creditors %}
+        <div class="creditors-list">
+            {% for creditor in creditors %}
+            <div class="creditors-card" id="creditor-{{ creditor.id }}">
+                <div class="creditors-card-header" onclick="toggleCreditorDetails({{ creditor.id }})">
+                    <div class="creditors-info">
+                        <h5 class="creditors-name">
+                            <i class="fas fa-user-tie"></i> {{ creditor.name }}
+                            {% if creditor.current_debt > 0 %}
+                            <span class="badge bg-danger ms-2">طلبکار</span>
+                            {% else %}
+                            <span class="badge bg-success ms-2">تسویه شده</span>
+                            {% endif %}
+                        </h5>
+                        <div class="creditors-meta">
+                            {% if creditor.phone %}<span><i class="fas fa-phone"></i> {{ creditor.phone }}</span>{% endif %}
+                            {% if creditor.company %}<span><i class="fas fa-building"></i> {{ creditor.company }}</span>{% endif %}
+                            <span><i class="fas fa-calendar"></i> {{ creditor.created_at|persian_date }}</span>
+                        </div>
+                    </div>
+                    <div class="creditors-stats">
+                        <div><span class="creditors-stat-label-sm">مجموع قرض</span><span class="creditors-stat-value-sm danger">{{ "{:,.0f}".format(creditor.total_loans|default(0)) }}</span></div>
+                        <div><span class="creditors-stat-label-sm">پرداخت شده</span><span class="creditors-stat-value-sm success">{{ "{:,.0f}".format(creditor.total_paid|default(0)) }}</span></div>
+                        <div><span class="creditors-stat-label-sm">مانده</span><span class="creditors-stat-value-sm warning">{{ "{:,.0f}".format(creditor.current_debt) }}</span></div>
+                        <i class="fas fa-chevron-down creditors-toggle-icon"></i>
+                    </div>
+                </div>
+
+                <div class="creditors-details" id="details-{{ creditor.id }}" style="display: none;">
+                    <div class="creditors-details-section">
+                        <h6 class="creditors-details-title"><i class="fas fa-address-card"></i> اطلاعات تماس</h6>
+                        <div class="creditors-details-grid">
+                            {% if creditor.address %}<div><span>آدرس:</span> {{ creditor.address }}</div>{% endif %}
+                            {% if creditor.email %}<div><span>ایمیل:</span> {{ creditor.email }}</div>{% endif %}
+                            {% if creditor.tax_number %}<div><span>شماره مالیاتی:</span> {{ creditor.tax_number }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="creditors-details-section">
+                        <h6 class="creditors-details-title"><i class="fas fa-history"></i> تاریخچه قرض‌ها</h6>
+                        {% if creditor.loans and creditor.loans|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="creditors-loans-table">
+                                <thead>
+                                    <tr><th>تاریخ</th><th>محصول</th><th>مقدار</th><th>مبلغ قرض</th><th>پرداخت شده</th><th>وضعیت</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for loan in creditor.loans %}
+                                    <tr>
+                                        <td>{{ loan.date|persian_date }}</td>
+                                        <td>{{ loan.product.name if loan.product else '-' }}</td>
+                                        <td>{{ loan.quantity }} {{ loan.unit or 'عدد' }}</td>
+                                        <td class="text-danger">{{ "{:,.0f}".format(loan.amount) }}</td>
+                                        <td class="text-success">{{ "{:,.0f}".format(loan.paid_amount|default(0)) }}</td>
+                                        <td>{% if loan.status == 'settled' %}<span class="badge bg-success">تسویه</span>{% else %}<span class="badge bg-warning">جاری</span>{% endif %}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}<p class="text-center text-muted">هیچ قرضی ثبت نشده است</p>{% endif %}
+                    </div>
+
+                    <div class="creditors-details-actions">
+                        <a href="{{ url_for('main_bp.edit_creditor', creditor_id=creditor.id) }}" class="btn btn-warning btn-sm"><i class="fas fa-edit"></i> ویرایش</a>
+                        <button onclick="printCreditorReport({{ creditor.id }})" class="btn btn-secondary btn-sm"><i class="fas fa-print"></i> چاپ</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="creditors-empty">
+            <i class="fas fa-users fa-4x"></i>
+            <h3>هیچ طلبکاری ثبت نشده است</h3>
+            <a href="{{ url_for('main_bp.add_creditor') }}" class="btn btn-primary mt-3">➕ ثبت طلبکار جدید</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.creditors-page-wrapper { width: 100%; }
+.creditors-title { color: #FFD700; }
+
+.creditors-stat-card {
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.creditors-stat-card.danger { border-top: 4px solid #dc3545; }
+.creditors-stat-card.info { border-top: 4px solid #17a2b8; }
+.creditors-stat-card.warning { border-top: 4px solid #ffc107; }
+.creditors-stat-label { color: rgba(255, 255, 255, 0.6); font-size: 13px; }
+.creditors-stat-number { color: #FFD700; margin: 10px 0 0; }
+
+.creditors-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.creditors-list { display: flex; flex-direction: column; gap: 15px; }
+
+.creditors-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.creditors-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    background: rgba(102, 126, 234, 0.1);
+    cursor: pointer;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.creditors-name { color: #a5b4fc; margin: 0 0 5px; font-size: 16px; }
+.creditors-meta { display: flex; gap: 15px; font-size: 12px; color: rgba(255, 255, 255, 0.6); }
+.creditors-stats { display: flex; align-items: center; gap: 20px; }
+.creditors-stat-label-sm { display: block; font-size: 10px; color: rgba(255, 255, 255, 0.5); }
+.creditors-stat-value-sm { font-size: 14px; font-weight: 600; }
+.creditors-stat-value-sm.danger { color: #f87171; }
+.creditors-stat-value-sm.success { color: #4ade80; }
+.creditors-stat-value-sm.warning { color: #fbbf24; }
+.creditors-toggle-icon { color: rgba(255, 255, 255, 0.5); transition: transform 0.3s; }
+
+.creditors-details { padding: 20px; background: rgba(0, 0, 0, 0.2); border-top: 1px solid rgba(255, 215, 0, 0.1); }
+.creditors-details-section { margin-bottom: 20px; }
+.creditors-details-title { color: #a5b4fc; font-size: 14px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(102, 126, 234, 0.3); }
+.creditors-details-grid { display: flex; flex-wrap: wrap; gap: 15px; }
+.creditors-details-grid div { background: rgba(255, 255, 255, 0.03); padding: 8px 12px; border-radius: 8px; font-size: 13px; }
+.creditors-details-grid span { color: rgba(255, 255, 255, 0.5); }
+
+.creditors-loans-table { width: 100%; font-size: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; }
+.creditors-loans-table th { padding: 8px; background: rgba(102, 126, 234, 0.2); color: #a5b4fc; }
+.creditors-loans-table td { padding: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+
+.creditors-details-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+
+.creditors-empty { text-align: center; padding: 60px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 16px; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .creditors-card-header { flex-direction: column; align-items: flex-start; }
+    .creditors-stats { width: 100%; justify-content: space-between; }
+}
+</style>
+
+<script>
+function toggleCreditorDetails(creditorId) {
+    const details = document.getElementById(`details-${creditorId}`);
+    const icon = document.querySelector(`#creditor-${creditorId} .creditors-toggle-icon`);
+    if (details.style.display === 'none') {
+        details.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        details.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+</script>
+{% endblock %}

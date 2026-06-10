@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}مدیریت پشتیبان‌گیری{% endblock %}
+
+{% block content %}
+<div class="backup-page-wrapper">
+    <div class="container mt-4 fade-in backup-container">
+        <h1 class="text-center mb-4 backup-title">💾 مدیریت پشتیبان‌گیری سیستم</h1>
+
+        <div class="row g-4">
+            <!-- ایجاد بک‌آپ -->
+            <div class="col-md-6">
+                <div class="backup-card">
+                    <div class="backup-card-header bg-success">
+                        <h5 class="mb-0"><i class="fas fa-database"></i> 📦 ایجاد پشتیبان</h5>
+                    </div>
+                    <div class="backup-card-body text-center">
+                        <div class="d-grid gap-3">
+                            <a href="{{ url_for('main_bp.backup_export') }}" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-file-csv"></i> 📋 خروجی CSV
+                            </a>
+                            <a href="{{ url_for('main_bp.backup_full') }}" class="btn btn-success btn-lg">
+                                <i class="fas fa-file-archive"></i> 🗜️ بک‌آپ کامل (ZIP)
+                            </a>
+                            <small class="backup-hint">شامل دیتابیس، محصولات و مشتریان</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- بازگردانی -->
+            <div class="col-md-6">
+                <div class="backup-card">
+                    <div class="backup-card-header bg-warning">
+                        <h5 class="mb-0"><i class="fas fa-undo"></i> 🔄 بازگردانی پشتیبان</h5>
+                    </div>
+                    <div class="backup-card-body">
+                        <form action="{{ url_for('main_bp.backup_restore') }}" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="mb-3">
+                                <label class="backup-label">انتخاب فایل پشتیبان</label>
+                                <input type="file" class="form-control backup-input" name="backup_file" accept=".db,.zip,.csv" required>
+                                <small class="backup-hint">فرمت‌های مجاز: DB، ZIP، CSV</small>
+                            </div>
+                            <div class="backup-alert">
+                                <i class="fas fa-exclamation-triangle"></i> ⚠️ توجه: قبل از بازگردانی، از اطلاعات فعلی بک‌آپ گرفته می‌شود.
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100 mt-3" onclick="return confirm('آیا از بازگردانی اطمینان دارید؟')">
+                                <i class="fas fa-sync-alt"></i> 🔁 شروع بازگردانی
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- لیست بک‌آپ‌ها -->
+        <div class="backup-card mt-4">
+            <div class="backup-card-header">
+                <h5 class="mb-0"><i class="fas fa-folder"></i> 📁 بک‌آپ‌های ذخیره‌شده</h5>
+            </div>
+            <div class="backup-card-body">
+                <div class="table-responsive">
+                    <table class="backup-table">
+                        <thead>
+                            <tr>
+                                <th>نام فایل</th>
+                                <th>نوع</th>
+                                <th>تاریخ</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">(در صورت نیاز می‌توان API لیست بک‌آپ‌ها را اضافه کرد)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.backup-page-wrapper { width: 100%; }
+.backup-title { color: #FFD700; }
+
+.backup-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+    height: 100%;
+}
+
+.backup-card-header {
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.backup-card-header.bg-success { background: rgba(40, 167, 69, 0.3) !important; }
+.backup-card-header.bg-warning { background: rgba(255, 193, 7, 0.3) !important; }
+.backup-card-header h5 { color: #FFD700; margin: 0; }
+
+.backup-card-body { padding: 20px; }
+
+.backup-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+
+.backup-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.backup-label::before { content: "◉ "; color: #06b6d4; }
+
+.backup-hint { color: rgba(255, 255, 255, 0.5); font-size: 12px; display: block; margin-top: 5px; }
+
+.backup-alert {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(220, 53, 69, 0.15);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #f87171;
+    font-size: 13px;
+}
+
+.backup-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.backup-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    text-align: center;
+}
+.backup-table td {
+    padding: 10px;
+    color: #e2e8f0;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .backup-card-body { padding: 15px; }
+}
+</style>
+{% endblock %}

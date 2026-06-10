@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}لیست مشتریان{% endblock %}
+
+{% block content %}
+<div class="customers-page-wrapper">
+    <div class="container mt-4 fade-in customers-container">
+        <h1 class="text-center mb-4 customers-title">👥 لیست مشتریان</h1>
+
+        <!-- دکمه‌های اقدام -->
+        <div class="customers-actions mb-4">
+            <a href="{{ url_for('main_bp.add_customer') }}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> افزودن مشتری جدید
+            </a>
+            <a href="{{ url_for('main_bp.list_debtors') }}" class="btn btn-danger">
+                <i class="fas fa-hand-holding-usd"></i> قرض‌داران
+            </a>
+            <a href="{{ url_for('main_bp.debt_report') }}" class="btn btn-info">
+                <i class="fas fa-chart-line"></i> گزارش قرض
+            </a>
+            <a href="{{ url_for('main_bp.list_creditors') }}" class="btn btn-warning">
+                <i class="fas fa-building"></i> طلبکاران
+            </a>
+        </div>
+
+        <!-- فرم جستجو -->
+        <div class="customers-search-card mb-4">
+            <div class="customers-search-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-6">
+                        <input type="text" name="search" value="{{ request.args.get('search', '') }}"
+                               class="form-control customers-input" placeholder="نام یا شماره مشتری...">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> جستجو
+                        </button>
+                    </div>
+                    {% if request.args.get('search') %}
+                    <div class="col-md-2">
+                        <a href="{{ url_for('main_bp.list_customers') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-times"></i> پاک کردن
+                        </a>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+
+        <!-- جدول مشتریان -->
+        {% if customers %}
+        <div class="customers-table-container">
+            <div class="customers-table-header">
+                <h5 class="mb-0"><i class="fas fa-users"></i> لیست مشتریان</h5>
+            </div>
+            <div class="customers-table-body">
+                <div class="table-responsive">
+                    <table class="customers-table">
+                        <thead>
+                            <tr>
+                                <th>نام مشتری</th>
+                                <th>شماره تماس</th>
+                                <th>آدرس</th>
+                                <th>مجموع قرض</th>
+                                <th>تاریخ ثبت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in customers %}
+                            <tr>
+                                <td class="fw-bold">
+                                    <a href="{{ url_for('main_bp.customer_detail', customer_id=customer.id) }}"
+                                       class="customers-link">
+                                        {{ customer.name }}
+                                    </a>
+                                </td>
+                                <td>{{ customer.phone or '-' }}</td>
+                                <td>{{ customer.address or '-' }}</td>
+                                <td>
+                                    <span class="badge {% if customer.total_debt > 0 %}bg-danger{% else %}bg-success{% endif %}">
+                                        {{ "{:,.0f}".format(customer.total_debt) }} افغانی
+                                    </span>
+                                </td>
+                                <td>{{ customer.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <div class="customers-btn-group">
+                                        <a href="{{ url_for('main_bp.edit_customer', customer_id=customer.id) }}"
+                                           class="btn btn-sm btn-warning" title="ویرایش">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('main_bp.customer_detail', customer_id=customer.id) }}"
+                                           class="btn btn-sm btn-info" title="جزئیات">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger"
+                                                onclick="deleteCustomer({{ customer.id }}, '{{ customer.name }}')"
+                                                title="حذف">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <form id="deleteForm-{{ customer.id }}"
+                                          action="{{ url_for('main_bp.delete_customer', customer_id=customer.id) }}"
+                                          method="POST" style="display: none;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="customers-empty">
+            <i class="fas fa-users fa-4x mb-3"></i>
+            <h3>هیچ مشتری ثبت نشده است</h3>
+            <a href="{{ url_for('main_bp.add_customer') }}" class="btn btn-primary mt-3">
+                <i class="fas fa-plus"></i> ثبت اولین مشتری
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.customers-page-wrapper { width: 100%; }
+.customers-title { color: #FFD700; }
+
+.customers-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.customers-search-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+}
+.customers-search-body { padding: 20px; }
+
+.customers-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.customers-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.customers-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.customers-table-header h5 { color: #FFD700; margin: 0; }
+.customers-table-body { padding: 0; overflow-x: auto; }
+
+.customers-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.customers-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    font-size: 13px;
+    text-align: center;
+}
+.customers-table td {
+    padding: 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    text-align: center;
+}
+.customers-link { color: #FFD700; text-decoration: none; }
+.customers-link:hover { color: #fff3b0; }
+
+.customers-btn-group { display: flex; gap: 5px; justify-content: center; }
+
+.customers-empty {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+}
+.customers-empty h3 { color: #FFD700; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .customers-table th, .customers-table td { font-size: 11px; padding: 6px; }
+}
+</style>
+
+<script>
+function deleteCustomer(customerId, customerName) {
+    if (confirm(`آیا از حذف مشتری «${customerName}» مطمئن هستید؟`)) {
+        document.getElementById(`deleteForm-${customerId}`).submit();
+    }
+}
+</script>
+{% endblock %}

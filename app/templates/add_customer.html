@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}افزودن مشتری{% endblock %}
+
+{% block content %}
+
+<div class="products-page-wrapper">
+    <div class="container mt-4">
+
+        <div class="products-card mx-auto" style="max-width:650px">
+
+            <div class="products-card-header">
+                <h3 class="text-center">
+                    👥 افزودن مشتری جدید
+                </h3>
+            </div>
+
+            <div class="products-card-body">
+
+                <form method="POST">
+
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label text-warning") }}
+
+                        {{ form.name(
+                        class="form-control products-input",
+                        placeholder="نام کامل مشتری"
+                        ) }}
+                    </div>
+
+                    <div class="mb-3">
+
+                        {{ form.phone.label(class="form-label text-warning") }}
+
+                        {{ form.phone(
+                        class="form-control products-input",
+                        placeholder="09xxxxxxxx"
+                        ) }}
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        {{ form.address.label(class="form-label text-warning") }}
+
+                        {{ form.address(
+                        class="form-control products-input",
+                        placeholder="آدرس (اختیاری)"
+                        ) }}
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        {{ form.total_debt.label(class="form-label text-warning") }}
+
+                        {{ form.total_debt(
+                        class="form-control products-input",
+                        placeholder="0"
+                        ) }}
+
+                    </div>
+
+                    <div class="d-flex gap-3 mt-4">
+
+                        <button type="submit"
+                                class="btn btn-success flex-grow-1">
+
+                            ✅ ثبت مشتری
+
+                        </button>
+
+                        <a href="{{ url_for('main_bp.list_customers') }}"
+                           class="btn btn-secondary">
+
+                            ❌ لغو
+
+                        </a>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}مدیریت قرض‌های دوکان{% endblock %}
+
+{% block content %}
+<div class="loans-page-wrapper">
+    <div class="container mt-4 fade-in loans-container">
+        <div class="loans-header mb-4">
+            <h1 class="loans-title"><i class="fas fa-hand-holding-usd"></i> 💰 مدیریت قرض‌های دوکان</h1>
+            <a href="{{ url_for('main_bp.add_loan') }}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> ➕ ثبت قرض جدید
+            </a>
+        </div>
+
+        <!-- آمار کلی -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="loans-stat-card primary">
+                    <small><i class="fas fa-coins"></i> کل قرض‌ها</small>
+                    <h3>{{ "{:,.0f}".format(total_loans) }} افغانی</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="loans-stat-card success">
+                    <small><i class="fas fa-check-circle"></i> پرداخت شده</small>
+                    <h3>{{ "{:,.0f}".format(total_paid) }} افغانی</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="loans-stat-card warning">
+                    <small><i class="fas fa-clock"></i> مانده بدهی</small>
+                    <h3>{{ "{:,.0f}".format(total_remaining) }} افغانی</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- جدول قرض‌ها -->
+        <div class="loans-table-container">
+            <div class="loans-table-header">
+                <h5 class="mb-0"><i class="fas fa-list"></i> لیست قرض‌ها</h5>
+            </div>
+            <div class="loans-table-body">
+                <div class="table-responsive">
+                    <table class="loans-table">
+                        <thead>
+                            <tr>
+                                <th>قرض‌دهنده</th>
+                                <th>مبلغ قرض</th>
+                                <th>تاریخ قرض</th>
+                                <th>تاریخ سررسید</th>
+                                <th>وضعیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for loan in loans %}
+                            <tr>
+                                <td class="fw-bold">
+                                    {{ loan.lender_name }}
+                                    {% if loan.description %}
+                                    <br><small class="loans-desc">{{ loan.description }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ "{:,.0f}".format(loan.amount) }} افغانی</td>
+                                <td>{{ loan.loan_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if loan.due_date %}
+                                        {{ loan.due_date.strftime('%Y-%m-%d') }}
+                                        {% if loan.due_date < today %}
+                                        <span class="badge bg-danger ms-1">منقضی شده</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">تعیین نشده</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if loan.is_paid %}
+                                    <span class="badge bg-success">پرداخت شده</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">در انتظار پرداخت</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="loans-btn-group">
+                                        {% if not loan.is_paid %}
+                                        <a href="{{ url_for('main_bp.add_loan_payment', loan_id=loan.id) }}" 
+                                           class="btn btn-sm btn-primary" title="پرداخت">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </a>
+                                        {% endif %}
+                                        <a href="{{ url_for('main_bp.loan_payments', loan_id=loan.id) }}" 
+                                           class="btn btn-sm btn-info" title="مشاهده پرداخت‌ها">
+                                            <i class="fas fa-chart-line"></i>
+                                        </a>
+                                    </div>
+                                 </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if not loans %}
+        <div class="loans-empty">
+            <i class="fas fa-hand-holding-usd fa-4x mb-3"></i>
+            <h3>هیچ قرضی ثبت نشده است</h3>
+            <a href="{{ url_for('main_bp.add_loan') }}" class="btn btn-success mt-3">
+                <i class="fas fa-plus-circle"></i> ثبت اولین قرض
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> بازگشت به خانه
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.loans-page-wrapper { width: 100%; }
+.loans-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+.loans-title { color: #FFD700; margin: 0; }
+
+.loans-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.2);
+}
+.loans-stat-card.primary { border-top: 4px solid #22d3ee; }
+.loans-stat-card.success { border-top: 4px solid #4ade80; }
+.loans-stat-card.warning { border-top: 4px solid #fbbf24; }
+.loans-stat-card small { color: rgba(255, 255, 255, 0.6); display: block; }
+.loans-stat-card h3 { color: #FFD700; margin: 10px 0 0; }
+
+.loans-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.loans-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.loans-table-header h5 { color: #FFD700; margin: 0; }
+.loans-table { width: 100%; border-collapse: collapse; }
+.loans-table th {
+    background: rgba(0, 0, 0, 0.4);
+    color: #FFD700;
+    padding: 12px;
+    font-size: 13px;
+    text-align: center;
+}
+.loans-table td {
+    padding: 10px;
+    color: #e2e8f0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    text-align: center;
+}
+.loans-desc { color: rgba(255, 255, 255, 0.5); font-size: 11px; }
+
+.loans-btn-group { display: flex; gap: 5px; justify-content: center; }
+
+.loans-empty {
+    text-align: center;
+    padding: 60px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+}
+.loans-empty h3 { color: #FFD700; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .loans-header { flex-direction: column; align-items: stretch; text-align: center; }
+    .loans-table th, .loans-table td { font-size: 11px; padding: 6px; }
+}
+</style>
+{% endblock %}

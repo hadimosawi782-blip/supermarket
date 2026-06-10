@@ -1,0 +1,258 @@
+/* طرح‌بندی اصلی */
+
+/* ---------- DASHBOARD ---------- */
+.dashboard {
+    position: fixed;
+    right: 25px;
+    top: 25px;
+    bottom: 25px;
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+
+    border-radius: 22px;
+    border: 1px solid rgba(255, 215, 0, 0.18);
+
+    padding: 20px 15px;
+
+    box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+
+    display: flex;
+    flex-direction: column;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    z-index: 1000;
+
+    transition: all 0.3s ease;
+}
+
+/* منوی داخلی */
+.dashboard-menu {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding: 5px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* اسکرول بار */
+.dashboard-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dashboard-menu::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+.dashboard-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.25);
+    border-radius: 10px;
+}
+
+.dashboard-menu::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 215, 0, 0.4);
+}
+
+/* ---------- MAIN CONTENT ---------- */
+.main-content {
+    margin-right: 340px;
+    padding: 20px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 1199px) {
+
+    .dashboard {
+        width: 280px;
+        min-width: 280px;
+        max-width: 280px;
+    }
+
+    .main-content {
+        margin-right: 320px;
+        width: calc(100% - 330px);
+    }
+}
+
+@media (max-width: 992px) {
+
+    .dashboard {
+        position: relative;
+
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+
+        height: auto;
+
+        right: 0;
+        top: 0;
+        bottom: auto;
+
+        margin: 0 0 25px 0;
+
+        border-radius: 20px;
+    }
+
+    .main-content {
+        margin-right: 0;
+        width: 100%;
+
+        padding: 15px;
+    }
+
+    .dashboard-menu {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+
+        gap: 10px;
+
+        max-height: none;
+    }
+
+    .glass-btn {
+        margin-bottom: 0;
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .dashboard-menu {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .main-content {
+        padding: 10px;
+    }
+
+    .dashboard {
+        margin-bottom: 20px;
+        padding: 15px 10px;
+    }
+}
+
+@media (max-width: 576px) {
+
+    .dashboard-menu {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .glass-btn {
+        padding: 14px 18px;
+        font-size: 18px;
+    }
+
+    .main-content {
+        padding: 18px 12px;
+    }
+}
+
+/* ---------- متن طلایی ---------- */
+
+body {
+    color: #FFD700;
+}
+
+p,
+span,
+label,
+td,
+th,
+li,
+small {
+    color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.25);
+}
+
+a {
+    color: #FFD700;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #fff3b0;
+}
+
+/* ---------- کلاس‌های کمکی ---------- */
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+.p-20 {
+    padding: 20px;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.h-100 {
+    height: 100%;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}

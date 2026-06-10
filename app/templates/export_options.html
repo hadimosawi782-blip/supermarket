@@ -1,0 +1,298 @@
+<!-- templates/export_options.html -->
+{% extends "base.html" %}
+
+{% block title %}گزارش‌گیری Excel{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">📊 گزارش‌گیری Excel</h1>
+    
+    <!-- ردیف ۱: اجناس | مشتری‌ها | فروشات -->
+    <div class="row">
+        <!-- اجناس -->
+        <div class="col-md-4 mb-3">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">📦 اجناس</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p>لیست تمام محصولات و کالاها.</p>
+                    <div class="btn-group-vertical w-100 mt-auto">
+                        <a href="{{ url_for('main_bp.export_products') }}" class="btn btn-primary mb-2">
+                            <i class="fas fa-file-excel"></i> همه اجناس
+                        </a>
+                        <a href="{{ url_for('main_bp.export_low_stock') }}" class="btn btn-warning mb-2">
+                            <i class="fas fa-file-excel"></i> موجودی کم
+                        </a>
+                        <a href="{{ url_for('main_bp.export_expiring') }}" class="btn btn-danger">
+                            <i class="fas fa-file-excel"></i> نزدیک انقضا
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- مشتری‌ها -->
+        <div class="col-md-4 mb-3">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">👥 مشتری‌ها</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p>لیست تمام مشتریان ثبت‌شده.</p>
+                    <div class="d-grid gap-2 mt-auto">
+                        <a href="{{ url_for('main_bp.export_customers') }}" class="btn btn-info">
+                            <i class="fas fa-file-excel"></i> دریافت Excel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- فروشات -->
+        <div class="col-md-4 mb-3">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">🛒 فروشات</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p>لیست تمام فروشات با جزئیات کامل.</p>
+                    <div class="btn-group-vertical w-100 mt-auto">
+                        <a href="{{ url_for('main_bp.export_sales', filter='all') }}" class="btn btn-success mb-2">
+                            <i class="fas fa-file-excel"></i> همه فروشات
+                        </a>
+                        <a href="{{ url_for('main_bp.export_sales', filter='paid') }}" class="btn btn-info mb-2">
+                            <i class="fas fa-file-excel"></i> فروشات نقدی
+                        </a>
+                        <a href="{{ url_for('main_bp.export_sales', filter='debt') }}" class="btn btn-warning">
+                            <i class="fas fa-file-excel"></i> فروشات نسیه
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ردیف ۲: بدهکاران | طلبکاران | مصارف (NEW) -->
+    <div class="row mt-3">
+        <!-- بدهکاران -->
+        <div class="col-md-4 mb-3">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">💰 بدهکاران</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p>لیست مشتریانی که به شما بدهکار هستند.</p>
+                    <div class="d-grid gap-2 mt-auto">
+                        <a href="{{ url_for('main_bp.export_debtors') }}" class="btn btn-danger">
+                            <i class="fas fa-file-excel"></i> دریافت Excel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- طلبکاران -->
+        <div class="col-md-4 mb-3">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">📝 طلبکاران</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p>لیست افرادی که از شما طلب دارند.</p>
+                    <div class="d-grid gap-2 mt-auto">
+                        <a href="{{ url_for('main_bp.export_creditors') }}" class="btn btn-warning">
+                            <i class="fas fa-file-excel"></i> دریافت Excel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- مصارف (NEW) -->
+        <div class="col-md-4 mb-3">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">💸 مصارف</h5>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p>لیست تمام مصارف و هزینه‌های فروشگاه.</p>
+                    <div class="btn-group-vertical w-100 mt-auto">
+                        <a href="{{ url_for('main_bp.export_expenses', filter='all') }}" class="btn btn-danger mb-2">
+                            <i class="fas fa-file-excel"></i> همه مصارف
+                        </a>
+                        <a href="{{ url_for('main_bp.export_expenses', filter='today') }}" class="btn btn-warning mb-2">
+                            <i class="fas fa-file-excel"></i> مصارف امروز
+                        </a>
+                        <a href="{{ url_for('main_bp.export_expenses', filter='week') }}" class="btn btn-info mb-2">
+                            <i class="fas fa-file-excel"></i> مصارف این هفته
+                        </a>
+                        <a href="{{ url_for('main_bp.export_expenses', filter='month') }}" class="btn btn-secondary">
+                            <i class="fas fa-file-excel"></i> مصارف این ماه
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ردیف ۳: آمار کلی (NEW) -->
+    <div class="row mt-3">
+        <div class="col-md-12">
+            <div class="card glass-card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">📊 آمار کلی</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">اجناس</small>
+                                <span class="badge bg-primary rounded-pill fs-5">{{ products_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 bg-info bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">مشتریان</small>
+                                <span class="badge bg-info rounded-pill fs-5">{{ customers_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">فروشات</small>
+                                <span class="badge bg-success rounded-pill fs-5">{{ sales_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 bg-danger bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">بدهکاران</small>
+                                <span class="badge bg-danger rounded-pill fs-5">{{ debtors_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">طلبکاران</small>
+                                <span class="badge bg-warning rounded-pill fs-5">{{ creditors_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="text-center p-3 bg-danger bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">مصارف</small>
+                                <span class="badge bg-danger rounded-pill fs-5">{{ expenses_count|default(0) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ردیف دوم آمار -->
+                    <div class="row mt-3">
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 bg-secondary bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">مجموع فروش</small>
+                                <span class="badge bg-success rounded-pill fs-6">{{ "{:,.0f}".format(total_sales|default(0)) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 bg-secondary bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">مجموع مصارف</small>
+                                <span class="badge bg-danger rounded-pill fs-6">{{ "{:,.0f}".format(total_expenses|default(0)) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 bg-secondary bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">قرض داری مردم</small>
+                                <span class="badge bg-danger rounded-pill fs-6">{{ "{:,.0f}".format(total_customer_debt|default(0)) }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="text-center p-3 bg-secondary bg-opacity-10 rounded">
+                                <small class="text-white-50 d-block">قرض داری فروشگاه</small>
+                                <span class="badge bg-warning rounded-pill fs-6">{{ "{:,.0f}".format(total_creditor_debt|default(0)) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- دکمه بازگشت -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary">
+            <i class="fas fa-home"></i> بازگشت به خانه
+        </a>
+    </div>
+</div>
+
+<style>
+.glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    color: white;
+    height: 100%;
+    min-height: 300px;
+}
+
+.card-header {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: bold;
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.btn {
+    transition: all 0.3s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.text-white-50 {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 0.8rem;
+}
+
+.badge {
+    font-size: 1rem !important;
+    padding: 0.5rem 0.8rem;
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .col-md-4 {
+        margin-bottom: 15px;
+    }
+    
+    .glass-card {
+        min-height: 250px;
+    }
+    
+    .badge {
+        font-size: 0.9rem !important;
+    }
+}
+</style>
+{% endblock %}

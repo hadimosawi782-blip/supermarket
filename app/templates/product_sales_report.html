@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}گزارش فروش اجناس{% endblock %}
+
+{% block content %}
+<div class="productsales-page-wrapper">
+    <div class="container-fluid mt-4 fade-in productsales-container">
+        <div class="productsales-filter-card mb-4">
+            <h2 class="productsales-title"><i class="fas fa-chart-line"></i> گزارش فروش اجناس</h2>
+            <p class="productsales-subtitle">مشاهده جزئیات فروش، مفاد و ضرر و مقدار فروش اجناس</p>
+
+            <form method="POST" class="row g-3 mt-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="col-md-4">
+                    <label class="productsales-label">انتخاب جنس</label>
+                    <select name="product_id" class="form-control productsales-input" required>
+                        <option value="">انتخاب جنس</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="productsales-label">از تاریخ</label>
+                    <input type="date" name="start_date" class="form-control productsales-input">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="productsales-label">تا تاریخ</label>
+                    <input type="date" name="end_date" class="form-control productsales-input">
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> جستجو</button>
+                </div>
+            </form>
+        </div>
+
+        {% if report_data %}
+        <!-- خلاصه -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4"><div class="productsales-stat-card info"><small>مجموع تعداد فروش</small><h3>{{ summary.total_qty }}</h3></div></div>
+            <div class="col-md-4"><div class="productsales-stat-card success"><small>مجموع فروش</small><h3>{{ "{:,.0f}".format(summary.total_sales) }} افغانی</h3></div></div>
+            <div class="col-md-4"><div class="productsales-stat-card warning"><small>مجموع مفاد و ضرر</small><h3>{{ "{:,.0f}".format(summary.total_profit) }} افغانی</h3></div></div>
+        </div>
+
+        <!-- جدول -->
+        <div class="productsales-table-container">
+            <div class="productsales-table-header">
+                <h5 class="mb-0"><i class="fas fa-table"></i> فروشات: {{ selected_product.name }}</h5>
+            </div>
+            <div class="productsales-table-body">
+                <div class="table-responsive">
+                    <table class="productsales-table">
+                        <thead><tr><th>فاکتور</th><th>تاریخ</th><th>تعداد</th><th>قیمت</th><th>مبلغ</th><th>مفاد و ضرر</th></tr></thead>
+                        <tbody>
+                            {% for row in report_data %}
+                            <tr><td>{{ row.invoice }}</td><td>{{ row.date.strftime('%Y-%m-%d') }}</td><td>{{ row.qty }}</td><td>{{ "{:,.0f}".format(row.price) }}</td><td class="text-success">{{ "{:,.0f}".format(row.amount) }}</td><td class="text-warning">{{ "{:,.0f}".format(row.profit or 0) }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.productsales-page-wrapper { width: 100%; }
+
+.productsales-filter-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 22px;
+    padding: 25px;
+}
+.productsales-title { color: #FFD700; font-size: 28px; margin-bottom: 5px; }
+.productsales-subtitle { color: rgba(255, 255, 255, 0.7); }
+
+.productsales-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.productsales-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 14px;
+    padding: 10px;
+}
+.productsales-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+
+.productsales-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+}
+.productsales-stat-card.info { border-top: 4px solid #22d3ee; }
+.productsales-stat-card.success { border-top: 4px solid #4ade80; }
+.productsales-stat-card.warning { border-top: 4px solid #fbbf24; }
+.productsales-stat-card h3 { color: #FFD700; margin: 10px 0 0; }
+
+.productsales-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.productsales-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.productsales-table-header h5 { color: #FFD700; margin: 0; }
+.productsales-table { width: 100%; border-collapse: collapse; }
+.productsales-table th { background: rgba(0, 0, 0, 0.4); color: #FFD700; padding: 12px; font-size: 13px; text-align: center; }
+.productsales-table td { padding: 10px; color: #e2e8f0; border-bottom: 1px solid rgba(255, 215, 0, 0.1); text-align: center; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) { .productsales-table th, .productsales-table td { font-size: 11px; padding: 6px; } }
+</style>
+{% endblock %}

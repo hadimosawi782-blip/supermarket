@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block title %}ویرایش محصول{% endblock %}
+
+{% block content %}
+<div class="editproduct-page-wrapper">
+    <div class="container mt-4 fade-in editproduct-container">
+        <h1 class="text-center mb-4 editproduct-title">✏️ ویرایش محصول</h1>
+
+        <!-- اسکنر بارکد -->
+        <div class="editproduct-scanner-card mb-4">
+            <div class="editproduct-scanner-header">
+                <h5 class="mb-0"><i class="fas fa-barcode"></i> اسکنر بارکد</h5>
+                <span class="editproduct-scanner-badge">فعال</span>
+            </div>
+            <div class="editproduct-card-body">
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <span class="input-group-text editproduct-input-group">
+                                <i class="fas fa-camera"></i>
+                            </span>
+                            <input type="text" id="barcodeScanner" class="form-control editproduct-input"
+                                   placeholder="بارکد جدید را اسکن کنید..." autocomplete="off">
+                            <button type="button" class="btn btn-info" onclick="checkBarcode()">
+                                <i class="fas fa-sync-alt"></i> به‌روزرسانی
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-outline-info w-100" onclick="generateBarcode()">
+                            <i class="fas fa-random"></i> تولید خودکار
+                        </button>
+                    </div>
+                </div>
+                <div id="barcodeMessage" class="mt-2" style="display: none;"></div>
+                <small class="editproduct-hint"><i class="fas fa-info-circle"></i> بارکد باید یکتا باشد.</small>
+            </div>
+        </div>
+
+        <div class="editproduct-card">
+            <div class="editproduct-card-header">
+                <h5 class="mb-0"><i class="fas fa-box"></i> محصول: {{ product.name }}</h5>
+            </div>
+            <div class="editproduct-card-body">
+                <form method="POST" id="editProductForm">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="editproduct-label">نام محصول</label>
+                            <input type="text" name="name" class="form-control editproduct-input" value="{{ product.name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="editproduct-label">شماره بچ</label>
+                            <input type="text" name="batch_no" class="form-control editproduct-input" value="{{ product.batch_no or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="editproduct-label">بارکد محصول</label>
+                        <input type="text" name="barcode" id="barcode" class="form-control editproduct-input"
+                               value="{{ product.barcode or '' }}" placeholder="بارکد محصول">
+                        <small class="editproduct-hint">بارکد ۱۳ رقمی (اختیاری)</small>
+                    </div>
+
+                    <!-- ==================== -->
+                    <!-- سیستم دوگانه موجودی -->
+                    <!-- ==================== -->
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-3">
+                            <label class="editproduct-label">تعداد کارتن</label>
+                            <input type="number" name="carton_quantity" id="cartonQuantity" class="form-control editproduct-input"
+                                   min="0" step="0.01" value="{{ product.quantity }}">
+                            <small class="editproduct-hint">تعداد کارتن موجود در انبار</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="editproduct-label">تعداد در کارتن</label>
+                            <input type="number" name="items_per_carton" id="itemsPerCarton" class="form-control editproduct-input"
+                                   min="0" step="0.01" value="{{ product.items_per_carton }}">
+                            <small class="editproduct-hint">تعداد عدد در هر کارتن</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="editproduct-label">تعداد تکی</label>
+                            <input type="number" name="single_quantity" id="singleQuantity" class="form-control editproduct-input"
+                                   min="0" step="1" value="{{ product.single_quantity }}">
+                            <small class="editproduct-hint">تعداد تکی خارج از کارتن</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="editproduct-label">واحد</label>
+                            <input type="text" name="unit" class="form-control editproduct-input" value="{{ product.unit or 'عدد' }}">
+                            <small class="editproduct-hint">واحد اندازه‌گیری</small>
+                        </div>
+                    </div>
+
+                    <!-- فیلد مخفی برای quantity (برای رفع خطای اعتبارسنجی فرم) -->
+                    <input type="hidden" name="quantity" id="hiddenQuantity" value="{{ product.quantity }}">
+
+                    <!-- تعداد کل (محاسبه خودکار) -->
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-12">
+                            <label class="editproduct-label">📊 تعداد کل (مجموع)</label>
+                            <input type="text" id="totalQuantity" class="form-control editproduct-input" readonly
+                                   style="background: #1a1a2e !important; font-weight: bold;">
+                            <small class="editproduct-hint">محاسبه خودکار: (تعداد کارتن × تعداد در کارتن) + تعداد تکی</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-6">
+                            <label class="editproduct-label">قیمت خرید (افغانی)</label>
+                            <input type="number" name="buying_price" class="form-control editproduct-input" step="0.01" min="0"
+                                   value="{{ product.buying_price }}" placeholder="قیمت خرید (افغانی)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="editproduct-label">قیمت فروش (افغانی)</label>
+                            <input type="number" name="selling_price" class="form-control editproduct-input" step="0.01" min="0"
+                                   value="{{ product.selling_price }}" placeholder="قیمت فروش (افغانی)">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-4">
+                            <label class="editproduct-label">تاریخ انقضا</label>
+                            <input type="date" name="expiry_date" class="form-control editproduct-input" value="{{ product.expiry_date.strftime('%Y-%m-%d') if product.expiry_date else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="editproduct-label">نوع خرید</label>
+                            <select name="purchase_type" id="purchase_type" class="form-control editproduct-input">
+                                <option value="cash" {% if product.purchase_type == 'cash' %}selected{% endif %}>نقدی</option>
+                                <option value="credit" {% if product.purchase_type == 'credit' %}selected{% endif %}>قرضی</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="editproduct-label">طلبکار</label>
+                            <select name="creditor_id" id="creditor_field" class="form-control editproduct-input">
+                                <option value="0">انتخاب طلبکار</option>
+                                {% for creditor in creditors %}
+                                <option value="{{ creditor.id }}" {% if product.creditor_id == creditor.id %}selected{% endif %}>
+                                    {{ creditor.name }} (قرض داری: {{ "{:,.0f}".format(creditor.current_debt) }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="editproduct-hint">فقط برای خرید قرضی</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label class="editproduct-label">توضیحات خرید</label>
+                        <textarea name="purchase_description" class="form-control editproduct-input" rows="3" placeholder="توضیحات خرید">{{ product.purchase_description or '' }}</textarea>
+                    </div>
+
+                    {% if product.creditor %}
+                    <div class="editproduct-alert-warning mt-3">
+                        ⚠️ این محصول قبلاً از <strong>{{ product.creditor.name }}</strong> به‌صورت قرضی خریداری شده است.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-success flex-grow-1">
+                            <i class="fas fa-save"></i> 💾 ذخیره تغییرات
+                        </button>
+                        <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> ❌ انصراف
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.editproduct-page-wrapper { width: 100%; }
+.editproduct-title { color: #FFD700; }
+
+.editproduct-scanner-card {
+    background: rgba(0, 123, 255, 0.1);
+    border: 2px dashed rgba(0, 123, 255, 0.3);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.editproduct-scanner-header {
+    background: rgba(0, 123, 255, 0.15);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.editproduct-scanner-header h5 { color: #22d3ee; margin: 0; }
+.editproduct-scanner-badge {
+    background: rgba(0, 123, 255, 0.2);
+    border: 1px solid rgba(0, 123, 255, 0.3);
+    color: #7abaff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+}
+
+.editproduct-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.editproduct-card-header {
+    background: rgba(6, 182, 212, 0.2);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+.editproduct-card-header h5 { color: #FFD700; margin: 0; }
+.editproduct-card-body { padding: 25px; }
+
+.editproduct-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.editproduct-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255, 215, 0, 0.25) !important;
+}
+.editproduct-input-group {
+    background: rgba(6, 182, 212, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #22d3ee;
+}
+
+.editproduct-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.editproduct-label::before { content: "◉ "; color: #06b6d4; }
+.editproduct-hint { color: rgba(255, 255, 255, 0.5); font-size: 11px; display: block; margin-top: 5px; }
+
+.editproduct-alert-warning {
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #fbbf24;
+    padding: 12px;
+    border-radius: 10px;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .editproduct-card-body { padding: 15px; }
+}
+</style>
+
+<script>
+// محاسبه تعداد کل
+function calculateTotalQuantity() {
+    const cartons = parseFloat(document.getElementById('cartonQuantity').value) || 0;
+    const itemsPerCarton = parseFloat(document.getElementById('itemsPerCarton').value) || 1;
+    const singleQuantity = parseFloat(document.getElementById('singleQuantity').value) || 0;
+    
+    const total = (cartons * itemsPerCarton) + singleQuantity;
+    document.getElementById('totalQuantity').value = total.toFixed(2) + " عدد";
+    
+    // به‌روزرسانی فیلد مخفی quantity
+    const hiddenQuantity = document.getElementById('hiddenQuantity');
+    if (hiddenQuantity) {
+        hiddenQuantity.value = cartons;
+    }
+}
+
+// بررسی و به‌روزرسانی بارکد
+function checkBarcode() {
+    const barcode = document.getElementById('barcodeScanner').value.trim();
+    if (!barcode) { 
+        showBarcodeMessage('❌ لطفاً بارکد را وارد کنید', 'danger'); 
+        return; 
+    }
+    
+    // بررسی یکتایی بارکد
+    fetch(`/api/products/barcode/${encodeURIComponent(barcode)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.id && data.id != {{ product.id }}) {
+                showBarcodeMessage(`❌ بارکد "${barcode}" قبلاً برای محصول "${data.name}" ثبت شده است`, 'danger');
+                document.getElementById('barcode').value = '{{ product.barcode or '' }}';
+            } else {
+                document.getElementById('barcode').value = barcode;
+                document.getElementById('barcodeScanner').value = '';
+                showBarcodeMessage('✅ بارکد با موفقیت به‌روزرسانی شد', 'success');
+            }
+        })
+        .catch(() => {
+            document.getElementById('barcode').value = barcode;
+            document.getElementById('barcodeScanner').value = '';
+            showBarcodeMessage('✅ بارکد به‌روزرسانی شد', 'success');
+        });
+}
+
+// تولید بارکد تصادفی
+function generateBarcode() {
+    const barcode = '626' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+    document.getElementById('barcode').value = barcode;
+    document.getElementById('barcodeScanner').value = '';
+    showBarcodeMessage(`✅ بارکد ${barcode} تولید شد`, 'success');
+}
+
+// نمایش پیام
+function showBarcodeMessage(message, type) {
+    const msgDiv = document.getElementById('barcodeMessage');
+    msgDiv.className = `alert alert-${type} mt-2`;
+    msgDiv.innerHTML = message;
+    msgDiv.style.display = 'block';
+    setTimeout(() => msgDiv.style.display = 'none', 3000);
+}
+
+// مقداردهی اولیه و رویدادها
+document.addEventListener('DOMContentLoaded', () => {
+    calculateTotalQuantity();
+    
+    const cartonInput = document.getElementById('cartonQuantity');
+    const itemsInput = document.getElementById('itemsPerCarton');
+    const singleInput = document.getElementById('singleQuantity');
+    
+    if (cartonInput) cartonInput.addEventListener('input', calculateTotalQuantity);
+    if (itemsInput) itemsInput.addEventListener('input', calculateTotalQuantity);
+    if (singleInput) singleInput.addEventListener('input', calculateTotalQuantity);
+    
+    const purchaseType = document.getElementById('purchase_type');
+    const creditor = document.getElementById('creditor_field');
+    
+    function toggleCreditor() { 
+        if (creditor) {
+            creditor.disabled = (purchaseType.value === 'cash'); 
+            if (creditor.disabled) creditor.value = '0'; 
+        }
+    }
+    toggleCreditor();
+    if (purchaseType) purchaseType.addEventListener('change', toggleCreditor);
+    
+    const scanner = document.getElementById('barcodeScanner');
+    if (scanner) {
+        scanner.addEventListener('keypress', e => { 
+            if (e.key === 'Enter') { e.preventDefault(); checkBarcode(); } 
+        });
+    }
+});
+</script>
+{% endblock %}

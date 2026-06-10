@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-line text-danger"></i> گزارش استاک‌اوت‌ها و زیان‌های موجودی</h2>
+        <div class="btn-group">
+            <a href="{{ url_for('main.inventory_write_off') }}" class="btn btn-danger">
+                <i class="fas fa-skull-crossbones"></i> ثبت استاک‌اوت جدید
+            </a>
+            <a href="{{ url_for('main.list_products') }}" class="btn btn-secondary">
+                <i class="fas fa-boxes"></i> مدیریت محصولات
+            </a>
+        </div>
+    </div>
+
+    <!-- فیلترها -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">فیلترها</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">دلیل</label>
+                    <select name="reason" class="form-select">
+                        <option value="all" {% if reason_filter == 'all' %}selected{% endif %}>همه دلایل</option>
+                        <option value="expired" {% if reason_filter == 'expired' %}selected{% endif %}>انقضا</option>
+                        <option value="damaged" {% if reason_filter == 'damaged' %}selected{% endif %}>آسیب دیده</option>
+                        <option value="stolen" {% if reason_filter == 'stolen' %}selected{% endif %}>مفقودی/سرقت</option>
+                        <option value="quality_issue" {% if reason_filter == 'quality_issue' %}selected{% endif %}>مشکل کیفی</option>
+                        <option value="count_error" {% if reason_filter == 'count_error' %}selected{% endif %}>خطای شمارش</option>
+                        <option value="other" {% if reason_filter == 'other' %}selected{% endif %}>سایر</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">محصول</label>
+                    <select name="product_id" class="form-select">
+                        <option value="all" {% if product_filter == 'all' %}selected{% endif %}>همه محصولات</option>
+                        {% for product in all_products %}
+                        <option value="{{ product.id }}" {% if product_filter == product.id|string %}selected{% endif %}>
+                            {{ product.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">از تاریخ</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">تا تاریخ</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">اعمال فیلتر</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- آمار کلی -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h5>تعداد استاک‌اوت‌ها</h5>
+                    <h3>{{ losses|length }} مورد</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h5>تعداد کل حذف شده</h5>
+                    <h3>{{ total_quantity }} عدد</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark text-white">
+                <div class="card-body text-center">
+                    <h5>زیان مالی کل</h5>
+                    <h3>{{ "{:,.0f}".format(total_loss) }} افغانی</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول گزارش -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">لیست استاک‌اوت‌ها</h5>
+        </div>
+        <div class="card-body">
+            {% if losses %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>تاریخ</th>
+                            <th>محصول</th>
+                            <th>تعداد</th>
+                            <th>قیمت واحد</th>
+                            <th>زیان کل</th>
+                            <th>دلیل</th>
+                            <th>توضیحات</th>
+                            <th>ثبت کننده</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loss in losses %}
+                        <tr>
+                            <td>{{ loss.loss_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <strong>{{ loss.product.name }}</strong>
+                                {% if loss.product.batch_no %}
+                                <br><small class="text-muted">بچ: {{ loss.product.batch_no }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ loss.quantity }} {{ loss.product.unit }}</td>
+                            <td>{{ "{:,.0f}".format(loss.unit_cost) }} افغانی</td>
+                            <td class="fw-bold text-danger">{{ "{:,.0f}".format(loss.total_loss) }} افغانی</td>
+                            <td>
+                                {% set reason_icons = {
+                                    'expired': '🕒',
+                                    'damaged': '💔', 
+                                    'stolen': '🚫',
+                                    'quality_issue': '⚠️',
+                                    'count_error': '📊',
+                                    'other': '📝'
+                                } %}
+                                <span class="badge bg-light text-dark">
+                                    {{ reason_icons[loss.reason] }} 
+                                    {{ loss.reason }}
+                                </span>
+                            </td>
+                            <td>{{ loss.description or '-' }}</td>
+                            <td>{{ loss.user.full_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <p class="text-success">هیچ مورد استاک‌اوتی ثبت نشده است</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

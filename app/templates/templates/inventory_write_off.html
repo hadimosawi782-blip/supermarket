@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-skull-crossbones"></i> سیستم استاک‌اوت (حذف موجودی)</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.product_id.label }}</label>
+                                {{ form.product_id(class="form-select") }}
+                                {% for error in form.product_id.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.quantity.label }}</label>
+                                {{ form.quantity(class="form-control", placeholder="مثلاً: 10") }}
+                                {% for error in form.quantity.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.reason.label }}</label>
+                                {{ form.reason(class="form-select") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ form.description.label }}</label>
+                            {{ form.description(class="form-control", rows="3", placeholder="توضیحات کامل دلیل استاک‌اوت...") }}
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-exclamation-triangle"></i> توجه مهم:</h6>
+                            <ul class="mb-0">
+                                <li>این عمل <strong>غیرقابل بازگشت</strong> است</li>
+                                <li>موجودی از سیستم کسر می‌شود</li>
+                                <li>قیمت خرید به عنوان ضرر مالی ثبت می‌شود</li>
+                                <li>در گزارش سود و ضرر تأثیر خواهد داشت</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('main.list_products') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-right"></i> بازگشت
+                            </a>
+                            {{ form.submit(class="btn btn-danger btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

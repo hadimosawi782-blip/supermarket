@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}ثبت واپسی{% endblock %}
+
+{% block content %}
+<div class="returns-page-wrapper">
+    <div class="container mt-4 fade-in returns-container">
+        <h1 class="text-center mb-4 returns-title">🔄 ثبت واپسی کالا</h1>
+
+        <div class="returns-card">
+            <div class="returns-card-header">
+                <h5 class="mb-0"><i class="fas fa-undo-alt"></i> اطلاعات واپسی</h5>
+            </div>
+            <div class="returns-card-body">
+                <form method="POST" id="returnForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="returns-label">شماره فاکتور</label>
+                            <select name="sale_id" id="sale_id" class="form-control returns-input" required>
+                                <option value="">انتخاب فاکتور...</option>
+                                {% if sales %}
+                                    {% for sale in sales %}
+                                    <option value="{{ sale.id }}">
+                                        فاکتور {{ sale.invoice_number }} - {{ sale.customer.name if sale.customer else 'عمومی' }} - 
+                                        {{ "{:,.0f}".format(sale.final_amount) }} افغانی
+                                    </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="" disabled>هیچ فاکتوری یافت نشد</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="returns-label">مشتری</label>
+                            <select name="customer_id" id="customer_id" class="form-control returns-input" required>
+                                <option value="">انتخاب مشتری...</option>
+                                {% if customers %}
+                                    {% for customer in customers %}
+                                    <option value="{{ customer.id }}">
+                                        {{ customer.name }} - قرض داری: {{ "{:,.0f}".format(customer.total_debt) }} افغانی
+                                    </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="" disabled>هیچ مشتری یافت نشد</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-12">
+                            <label class="returns-label">محصول</label>
+                            <select name="product_id" id="product_id" class="form-control returns-input" required>
+                                <option value="">انتخاب محصول...</option>
+                                {% if products %}
+                                    {% for product in products %}
+                                    <option value="{{ product.id }}">
+                                        {{ product.name }} - موجودی: {{ product.total_items|int }} {{ product.unit }}
+                                    </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="" disabled>هیچ محصولی یافت نشد</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-4">
+                            <label class="returns-label">تعداد واپسی (عدد)</label>
+                            <input type="number" name="quantity" id="quantity" class="form-control returns-input" min="1" step="1" required>
+                            <small class="returns-hint">حداکثر: <span id="maxQuantity">0</span> عدد</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="returns-label">مبلغ بازگشتی (افغانی)</label>
+                            <input type="number" name="refund_amount" id="refund_amount" class="form-control returns-input" readonly>
+                            <small class="returns-hint">محاسبه خودکار</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="returns-label">دلیل واپسی</label>
+                            <select name="reason" id="reason" class="form-control returns-input" required>
+                                <option value="معیوب">معیوب</option>
+                                <option value="نامرغوب">نامرغوب</option>
+                                <option value="اشتباهی">اشتباهی خریداری شده</option>
+                                <option value="خراب">خراب شده</option>
+                                <option value="تاریخ گذشته">تاریخ گذشته</option>
+                                <option value="سایر">سایر</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="returns-note mt-4">
+                        <i class="fas fa-info-circle"></i> ℹ️ 
+                        <strong>نکته مهم:</strong> پس از ثبت واپسی، فاکتور فروش به‌روزرسانی شده و مبلغ مربوطه از قرض داری مشتری کسر می‌شود.
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-warning btn-lg px-5">
+                            <i class="fas fa-undo-alt"></i> ثبت واپسی
+                        </button>
+                        <a href="{{ url_for('main_bp.returns_list') }}" class="btn btn-secondary btn-lg px-5">
+                            <i class="fas fa-list"></i> لیست واپسی‌ها
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main_bp.list_sales') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> ↩️ بازگشت به لیست فروش‌ها
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.returns-page-wrapper { width: 100%; }
+.returns-title { color: #FFD700; margin-bottom: 30px; }
+
+.returns-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.returns-card-header {
+    background: rgba(6, 182, 212, 0.25);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.returns-card-header h5 { color: #FFD700; margin: 0; }
+
+.returns-card-body { padding: 25px; }
+
+.returns-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+    width: 100%;
+}
+
+.returns-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+}
+
+.returns-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.returns-label::before { content: "◉ "; color: #06b6d4; }
+
+.returns-hint { color: rgba(255, 255, 255, 0.5); font-size: 12px; display: block; margin-top: 5px; }
+
+.returns-note {
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: white;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .returns-card-body { padding: 15px; }
+}
+</style>
+
+<script>
+document.getElementById('sale_id').addEventListener('change', loadSaleItems);
+document.getElementById('product_id').addEventListener('change', updateMaxQuantity);
+document.getElementById('quantity').addEventListener('input', calculateRefundAmount);
+
+let saleItems = {};
+let productPrices = {};
+
+function loadSaleItems() {
+    const saleId = document.getElementById('sale_id').value;
+    if (!saleId) return;
+    
+    // ✅ استفاده از API صحیح
+    fetch(`/api/sale/${saleId}/info`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                saleItems = {};
+                productPrices = {};
+                
+                data.sale.items.forEach(item => {
+                    if (item.product_id) {
+                        saleItems[item.product_id] = item.quantity;
+                        // قیمت هر واحد با احتساب تخفیف
+                        const pricePerUnit = item.final_amount / item.quantity;
+                        productPrices[item.product_id] = pricePerUnit;
+                    }
+                });
+                
+                updateProductSelect();
+            } else {
+                console.error('Error loading sale items');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function updateProductSelect() {
+    const productSelect = document.getElementById('product_id');
+    const options = productSelect.options;
+    
+    for (let i = 0; i < options.length; i++) {
+        const option = options[i];
+        const productId = option.value;
+        
+        if (productId === '') continue;
+        
+        if (saleItems[productId]) {
+            option.style.display = '';
+            option.dataset.maxQty = saleItems[productId];
+            option.dataset.price = productPrices[productId];
+        } else {
+            option.style.display = 'none';
+        }
+    }
+    
+    productSelect.value = '';
+    updateMaxQuantity();
+}
+
+function updateMaxQuantity() {
+    const productId = document.getElementById('product_id').value;
+    const maxQty = saleItems[productId] || 0;
+    const maxQtySpan = document.getElementById('maxQuantity');
+    if (maxQtySpan) maxQtySpan.innerText = maxQty;
+    const quantityInput = document.getElementById('quantity');
+    if (quantityInput) quantityInput.max = maxQty;
+    calculateRefundAmount();
+}
+
+function calculateRefundAmount() {
+    const productId = document.getElementById('product_id').value;
+    const quantity = parseInt(document.getElementById('quantity').value) || 0;
+    const pricePerUnit = productPrices[productId] || 0;
+    
+    const refundAmount = quantity * pricePerUnit;
+    const refundInput = document.getElementById('refund_amount');
+    if (refundInput) refundInput.value = refundAmount.toFixed(0);
+}
+</script>
+{% endblock %}

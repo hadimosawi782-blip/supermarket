@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}گزارش کمبود موجودی{% endblock %}
+
+{% block content %}
+<div class="lowstock-page-wrapper">
+    <div class="container mt-4 fade-in lowstock-container">
+        <h1 class="text-center mb-4 lowstock-title">📦 گزارش اجناس کم‌مقدار</h1>
+
+        <!-- فیلتر -->
+        <div class="lowstock-filter-card mb-4">
+            <div class="lowstock-filter-body">
+                <form method="get" action="{{ url_for('main_bp.low_stock_report') }}" class="row g-3">
+                    <div class="col-md-8">
+                        <label class="lowstock-label">🔢 حد آستانه هشدار</label>
+                        <input type="number" name="threshold" value="{{ threshold }}" min="1" class="form-control lowstock-input" placeholder="حداقل موجودی">
+                        <small class="lowstock-hint">کمتر از این مقدار هشدار داده می‌شود</small>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i> 🔍 نمایش گزارش</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- آمار -->
+        {% if products %}
+        <div class="row g-4 mb-4">
+            <div class="col-md-4"><div class="lowstock-stat-card info"><small>📊 تعداد اقلام</small><h3>{{ products|length }}</h3></div></div>
+            <div class="col-md-4"><div class="lowstock-stat-card warning"><small>⚠️ کمترین موجودی</small><h3>{{ (products|min(attribute='quantity')).quantity }}</h3></div></div>
+            <div class="col-md-4"><div class="lowstock-stat-card success"><small>💰 میانگین قیمت</small><h3>{{ "%.0f"|format(products|map(attribute='selling_price')|sum / products|length) }} افغانی</h3></div></div>
+        </div>
+
+        <!-- جدول -->
+        <div class="lowstock-table-container">
+            <div class="lowstock-table-header"><h5 class="mb-0"><i class="fas fa-list"></i> لیست محصولات کم موجود</h5></div>
+            <div class="lowstock-table-body">
+                <div class="table-responsive">
+                    <table class="lowstock-table">
+                        <thead><tr><th>📦 نام جنس</th><th>📊 موجودی</th><th>💰 قیمت خرید</th><th>🏷️ قیمت فروش</th><th>📈 وضعیت</th></tr></thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr class="{% if product.quantity == 0 %}row-danger{% elif product.quantity <= 2 %}row-warning{% endif %}">
+                                <td class="fw-bold">{{ product.name }}</td>
+                                <td class="text-center"><span class="lowstock-badge {% if product.quantity == 0 %}danger{% elif product.quantity <= 2 %}warning{% else %}info{% endif %}">{{ product.quantity }}</span></td>
+                                <td class="text-center">{{ "{:,.0f}".format(product.buying_price) }} افغانی</td>
+                                <td class="text-center text-success">{{ "{:,.0f}".format(product.selling_price) }} افغانی</td>
+                                <td class="text-center">{% if product.quantity == 0 %}<span class="lowstock-status danger">❌ اتمام</span>{% elif product.quantity <= 2 %}<span class="lowstock-status warning">⚠️ کمبود شدید</span>{% else %}<span class="lowstock-status info">📋 نیاز سفارش</span>{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- خلاصه -->
+        <div class="lowstock-summary mt-4">
+            <div class="row">
+                <div class="col-md-4"><span>تعداد کل اقلام:</span> <strong>{{ products|length }}</strong></div>
+                <div class="col-md-4"><span>کمتر از ۳ عدد:</span> <strong>{{ products|selectattr("quantity","lt",3)|list|length }}</strong></div>
+                <div class="col-md-4"><span>اتمام موجودی:</span> <strong>{{ products|selectattr("quantity","equalto",0)|list|length }}</strong></div>
+            </div>
+        </div>
+        {% else %}
+        <div class="lowstock-empty">
+            <i class="fas fa-check-circle fa-4x mb-3"></i>
+            <h3>📭 کالای کم‌مقدار یافت نشد</h3>
+            <p>هیچ محصولی کمتر از <strong>{{ threshold }}</strong> موجودی ندارد.</p>
+            <a href="{{ url_for('main_bp.add_product') }}" class="btn btn-success mt-3">➕ افزودن محصول</a>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-4">
+            <button onclick="window.print()" class="btn btn-secondary m-1"><i class="fas fa-print"></i> چاپ</button>
+            <a href="{{ url_for('main_bp.list_products') }}" class="btn btn-info m-1"><i class="fas fa-boxes"></i> همه محصولات</a>
+            <a href="{{ url_for('main_bp.index') }}" class="btn btn-secondary m-1"><i class="fas fa-home"></i> خانه</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.lowstock-page-wrapper { width: 100%; }
+.lowstock-title { color: #FFD700; }
+
+.lowstock-filter-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 16px;
+}
+.lowstock-filter-body { padding: 20px; }
+
+.lowstock-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+.lowstock-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px;
+}
+.lowstock-hint { color: rgba(255, 255, 255, 0.5); font-size: 12px; display: block; margin-top: 5px; }
+
+.lowstock-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+}
+.lowstock-stat-card.info { border-top: 4px solid #22d3ee; }
+.lowstock-stat-card.warning { border-top: 4px solid #fbbf24; }
+.lowstock-stat-card.success { border-top: 4px solid #4ade80; }
+.lowstock-stat-card h3 { color: #FFD700; margin: 10px 0 0; }
+
+.lowstock-table-container {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.lowstock-table-header {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+.lowstock-table-header h5 { color: #FFD700; margin: 0; }
+.lowstock-table { width: 100%; border-collapse: collapse; }
+.lowstock-table th { background: rgba(0, 0, 0, 0.4); color: #FFD700; padding: 12px; font-size: 13px; text-align: center; }
+.lowstock-table td { padding: 10px; color: #e2e8f0; border-bottom: 1px solid rgba(255, 215, 0, 0.1); text-align: center; }
+.row-danger { background: rgba(220, 53, 69, 0.1); }
+.row-warning { background: rgba(255, 193, 7, 0.1); }
+
+.lowstock-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+.lowstock-badge.danger { background: #dc3545; color: white; }
+.lowstock-badge.warning { background: #ffc107; color: #1a1a2e; }
+.lowstock-badge.info { background: #17a2b8; color: white; }
+
+.lowstock-status { padding: 4px 12px; border-radius: 15px; font-size: 12px; }
+.lowstock-status.danger { background: #dc3545; color: white; }
+.lowstock-status.warning { background: #ffc107; color: #1a1a2e; }
+.lowstock-status.info { background: #17a2b8; color: white; }
+
+.lowstock-summary { padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; text-align: center; }
+
+.lowstock-empty { text-align: center; padding: 60px 20px; background: rgba(40, 167, 69, 0.1); border-radius: 16px; }
+.lowstock-empty h3 { color: #4ade80; }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) { .lowstock-table th, .lowstock-table td { font-size: 11px; padding: 6px; } }
+</style>
+{% endblock %}

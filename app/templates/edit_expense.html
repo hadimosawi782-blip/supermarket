@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}ویرایش مصرف{% endblock %}
+
+{% block content %}
+<div class="editexpense-page-wrapper">
+    <div class="container mt-4 fade-in editexpense-container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="editexpense-card">
+                    <div class="editexpense-card-header">
+                        <h5 class="mb-0 text-center"><i class="fas fa-edit text-warning"></i> ✏️ ویرایش مصرف</h5>
+                    </div>
+                    <div class="editexpense-card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                            <!-- توضیحات -->
+                            <div class="mb-3">
+                                <label class="editexpense-label">📝 توضیحات <span class="text-danger">*</span></label>
+                                <input type="text" name="description" class="form-control editexpense-input"
+                                       value="{{ expense.description }}" placeholder="توضیحات مصرف را وارد کنید" required>
+                            </div>
+
+                            <!-- مبلغ -->
+                            <div class="mb-3">
+                                <label class="editexpense-label">💰 مبلغ (افغانی) <span class="text-danger">*</span></label>
+                                <input type="number" name="amount" class="form-control editexpense-input"
+                                       step="0.01" min="0.01" value="{{ expense.amount }}" required>
+                            </div>
+
+                            <!-- دسته‌بندی -->
+                            <div class="mb-3">
+                                <label class="editexpense-label">📂 دسته‌بندی</label>
+                                <select name="category" class="form-control editexpense-input" required>
+                                    <option value="">انتخاب دسته‌بندی...</option>
+                                    <option value="خوراک" {% if expense.category == 'خوراک' %}selected{% endif %}>🍔 خوراک</option>
+                                    <option value="نوشیدنی" {% if expense.category == 'نوشیدنی' %}selected{% endif %}>🥤 نوشیدنی</option>
+                                    <option value="بهداشتی" {% if expense.category == 'بهداشتی' %}selected{% endif %}>🧼 بهداشتی</option>
+                                    <option value="لوازم التحریر" {% if expense.category == 'لوازم التحریر' %}selected{% endif %}>📝 لوازم التحریر</option>
+                                    <option value="برق" {% if expense.category == 'برق' %}selected{% endif %}>⚡ برق</option>
+                                    <option value="آب" {% if expense.category == 'آب' %}selected{% endif %}>💧 آب</option>
+                                    <option value="گاز" {% if expense.category == 'گاز' %}selected{% endif %}>🔥 گاز</option>
+                                    <option value="تلفن" {% if expense.category == 'تلفن' %}selected{% endif %}>📞 تلفن / اینترنت</option>
+                                    <option value="اجاره" {% if expense.category == 'اجاره' %}selected{% endif %}>🏠 اجاره</option>
+                                    <option value="حقوق" {% if expense.category == 'حقوق' %}selected{% endif %}>👥 حقوق کارکنان</option>
+                                    <option value="حمل و نقل" {% if expense.category == 'حمل و نقل' %}selected{% endif %}>🚚 حمل و نقل</option>
+                                    <option value="تعمیرات" {% if expense.category == 'تعمیرات' %}selected{% endif %}>🔧 تعمیرات</option>
+                                    <option value="تبلیغات" {% if expense.category == 'تبلیغات' %}selected{% endif %}>📢 تبلیغات</option>
+                                    <option value="سایر" {% if expense.category == 'سایر' %}selected{% endif %}>📦 سایر</option>
+                                </select>
+                            </div>
+
+                            <!-- تاریخ شمسی -->
+                            <div class="mb-3">
+                                <label class="editexpense-label">📅 تاریخ (شمسی)</label>
+                                <input type="text" name="persian_date" id="persianDate" 
+                                       class="form-control editexpense-input"
+                                       value="{{ expense.persian_date if expense.persian_date else expense.date|persian_date if expense.date else '' }}"
+                                       placeholder="مثال: 1403/01/15">
+                                <small class="form-hint">فرمت: سال/ماه/روز (مثال: 1403/01/15)</small>
+                            </div>
+
+                            <!-- تاریخ ثبت (فقط نمایشی) -->
+                            <div class="editexpense-info">
+                                <i class="fas fa-info-circle"></i>
+                                📌 تاریخ ثبت در سیستم: 
+                                {% if expense.created_at %}
+                                    {{ expense.created_at|persian_datetime }}
+                                {% else %}
+                                    نامشخص
+                                {% endif %}
+                            </div>
+
+                            <!-- دکمه‌ها -->
+                            <div class="d-flex gap-2 mt-4">
+                                <button type="submit" class="btn btn-warning flex-grow-1">
+                                    <i class="fas fa-save"></i> 💾 ذخیره تغییرات
+                                </button>
+                                <a href="{{ url_for('main_bp.list_expenses') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> ❌ انصراف
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.editexpense-page-wrapper { width: 100%; }
+
+.editexpense-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.editexpense-card-header {
+    background: rgba(255, 193, 7, 0.2);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.editexpense-card-header h5 { color: #FFD700; margin: 0; }
+
+.editexpense-card-body { padding: 25px; }
+
+.editexpense-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #FFD700;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.editexpense-label::before { content: "◉ "; color: #06b6d4; }
+
+.editexpense-input {
+    background: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 215, 0, 0.3) !important;
+    color: #FFD700 !important;
+    border-radius: 10px;
+    padding: 10px 12px;
+    width: 100%;
+}
+
+.editexpense-input:focus {
+    background: rgba(0, 0, 0, 0.8) !important;
+    border-color: #FFD700 !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+}
+
+.editexpense-info {
+    background: rgba(23, 162, 184, 0.1);
+    border: 1px solid rgba(23, 162, 184, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 5px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeInUp 0.5s ease-out; }
+
+@media (max-width: 768px) {
+    .editexpense-card-body { padding: 15px; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const persianDateInput = document.getElementById('persianDate');
+    
+    if (persianDateInput && !persianDateInput.value) {
+        // اگر مقداری نداشت، تاریخ فعلی را تنظیم کن
+        const today = new persianDate();
+        persianDateInput.value = today.format('YYYY/MM/DD');
+    }
+});
+</script>
+
+{% endblock %}

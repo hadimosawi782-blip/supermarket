@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>فاکتور فروش | {{ sale.invoice_number }}</title>
+
+<style>
+:root{
+    --primary:#2563eb;
+    --dark:#111827;
+    --muted:#6b7280;
+    --bg:#f1f5f9;
+    --card:#ffffff;
+    --dash:#cbd5e1;
+}
+
+body{
+    margin:0;
+    padding:12px;
+    font-family:"Segoe UI",Tahoma,sans-serif;
+    background:var(--bg);
+    color:var(--dark);
+}
+
+.invoice{
+    width:50%;
+    margin:auto;
+    background:var(--card);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 20px 45px rgba(0,0,0,.15);
+}
+
+/* ===== خطوط جداکننده بین بخش‌ها ===== */
+.divider{
+    border-top:2px solid #000;
+    margin:18px 0;
+}
+
+/* ===== 1. HEADER ===== */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.header h1{
+    margin:0;
+    font-size:22px;
+    color:var(--primary);
+}
+.header p{
+    margin:3px 0;
+    font-size:13px;
+    color:var(--muted);
+}
+
+.qr img{
+    width:90px;
+}
+
+/* ===== 2. CUSTOMER INFO ===== */
+.customer-info{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    font-size:15px;
+}
+
+.customer-info strong{
+    color:#000;
+}
+
+/* ===== 3. ITEMS ===== */
+.items{
+    margin-top:10px;
+}
+
+.item-head{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr 1fr 1fr;
+    font-weight:600;
+    font-size:15px;
+    padding-bottom:8px;
+    border-bottom:2px solid #000;
+}
+
+.item{
+    padding:10px 0;
+    border-bottom:1px dashed var(--dash);
+}
+
+.item:last-child{
+    border-bottom:1px dashed var(--dash);
+}
+
+.item-values{
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr 1fr 1fr;
+    font-size:15px;
+}
+
+.item-head div,
+.item-values div{
+    text-align:center;
+}
+
+/* ===== 4. SUMMARY + DEBT ===== */
+.summary{
+    padding:16px;
+    border-radius:16px;
+    background:linear-gradient(135deg,#2563eb,#1e40af);
+    color:#ffffff;
+    margin-top:12px;
+}
+
+.summary .row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    margin: 6px 0;
+    font-weight: 600; /* قبلاً  normal بود، حالا پررنگ‌تر */
+    color: #000;
+    border: none;
+}
+
+.summary .total {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 2px solid rgba(255,255,255,.7);
+    font-size: 18px;
+    font-weight: 600; /* خیلی پررنگ */
+    color: #000;
+}
+
+
+/* FOOTER */
+.footer{
+    margin-top:16px;
+    text-align:center;
+    font-size:12px;
+    color:#6b7280;
+}
+
+@media print{
+    body{background:none}
+    .invoice{width:100%;box-shadow:none}
+}
+</style>
+</head>
+
+<body>
+
+<div class="invoice">
+
+<!-- ===== HEADER ===== -->
+ <div class="header">
+    <div>
+        <h1>نماینده گی رنگ افغان فیضی بامیان</h1>
+        <p>شهرک جدید ،دشت عیسی خان ،روبروی مارکیت فرش فروشی ،جنب مارکیت ویش</p>
+
+        <p>
+            <img src="{{ url_for('static', filename='whatsapp.jpg') }}" width="16" style="vertical-align:middle;">
+              0779180259
+            &nbsp;&nbsp;&nbsp;
+              0790461345📞
+              0778042749📞
+        </p>
+
+        <p>بل فروش № {{ sale.invoice_number }}</p>
+    </div>
+
+    <!-- ===== QR CODE ===== -->
+          <img src="{{ url_for('static', filename='qr_sale.png') }}" width="100">
+
+    
+</div>
+
+
+  <div class="divider"></div>
+
+ <!-- ===== CUSTOMER INFO ===== -->
+ <div class="customer-info">
+    <div><strong>مشتری:</strong> {{ sale.customer.name if sale.customer else 'مشتری عمومی' }}</div>
+    <div><strong>تاریخ:</strong> {{ sale.date|persian_datetime }}</div>
+    <div><strong>تحویل:</strong> {{ sale.delivered_by or '-' }}</div>
+    <div><strong>ثبت:</strong> {{ sale.user.full_name if sale.user else 'سیستم' }}</div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== ITEMS ===== -->
+<div class="items">
+
+    <div class="item-head">
+        <div>محصول</div>
+        <div>تعداد</div>
+        <div>قیمت</div>
+        <div>تخفیف</div>
+        <div>مجموع</div>
+    </div>
+
+    {% for item in sale.items %}
+    {% set total = item.quantity * item.selling_price %}
+    {% set discount = total * (item.discount_percent or 0) / 100 %}
+    <div class="item">
+        <div class="item-values">
+            <div>{{ item.product.name }}</div>
+            <div>{{ item.quantity }}</div>
+            <div>{{ "%.0f"|format(item.selling_price) }}</div>
+            <div>{{ item.discount_percent or 0 }}%</div>
+            <div><strong>{{ "%.0f"|format(total - discount) }}</strong></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== SUMMARY + DEBT (یک کادر واحد) ===== -->
+<div class="summary">
+    <div class="row">
+        <span>مبلغ کل</span>
+        <span>{{ "%.0f"|format(sale.total_amount) }} افغانی</span>
+    </div>
+    <div class="row">
+        <span>پرداخت شده</span>
+        <span>{{ "%.0f"|format(sale.amount_paid) }} افغانی</span>
+    </div>
+  <div class="row">
+    <span>باقی قبلی</span>
+    <span>{{ "%.0f"|format(previous_remaining or 0) }} افغانی</span>
+</div>
+
+    <div class="row">
+        <span>باقی فعلی فاکتور</span>
+        <span>{{ "%.0f"|format(sale.remaining_debt) }} افغانی</span>
+    </div>
+    <div class="row total">
+        <span>جمع کل باقیات</span>
+        <span>{{ "%.0f"|format(total_remaining or sale.remaining_debt) }} افغانی</span>
+    </div>
+</div>
+
+<div class="footer">
+    ✓ فاکتور دیجیتالی • معتبر بدون مهر
+</div>
+
+</div>
+
+<script>
+setTimeout(()=>window.print(),700);
+window.onafterprint=()=>window.close();
+</script>
+
+</body>
+</html>

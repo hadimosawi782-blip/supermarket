@@ -1,0 +1,1090 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profit-report-page container-fluid py-3">
+
+<style>
+/* ===== صفحه اصلی ===== */
+.profit-report-page * {
+    box-sizing: border-box;
+}
+
+.profit-report-page .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+.profit-report-page canvas {
+    max-width: 100% !important;
+}
+
+.profit-report-page .chart-container {
+    overflow: hidden;
+}
+
+.profit-report-page {
+    direction: rtl;
+    overflow-x: hidden;
+}
+
+/* ===== کارت‌های شیشه‌ای ===== */
+.glass-card {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, .15);
+    transition: .3s;
+}
+
+.glass-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+}
+
+/* ===== هدر کارت ===== */
+.card-header-custom {
+    background: rgba(0, 0, 0, .18);
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, .12);
+}
+
+.card-header-custom h5 {
+    margin: 0;
+    color: #FFD700;
+    font-size: 17px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* ===== فیلتر ===== */
+.filter-section {
+    background: rgba(255, 255, 255, .12);
+    border: 1px solid rgba(255, 255, 255, .2);
+    backdrop-filter: blur(14px);
+    border-radius: 22px;
+    padding: 20px;
+    margin-bottom: 22px;
+    position: relative;
+    z-index: 10;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-btn {
+    border: none;
+    padding: 10px 18px;
+    border-radius: 14px;
+    text-decoration: none;
+    color: white;
+    font-size: 14px;
+    background: rgba(255, 255, 255, .12);
+    transition: .3s;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, .22);
+    transform: translateY(-2px);
+    color: white;
+}
+
+.filter-btn.active {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+}
+
+/* ===== کشوی انتخاب ماه ===== */
+.month-dropdown {
+    position: relative;
+    display: inline-block;
+    z-index: 1001;
+}
+
+.month-dropdown .filter-btn {
+    position: relative;
+    z-index: 1001;
+}
+
+.month-dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #1a1a2e;
+    min-width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    z-index: 1002;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.month-dropdown-content a {
+    display: block;
+    padding: 10px 20px;
+    color: #FFD700;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    transition: all 0.2s;
+}
+
+.month-dropdown-content a:hover {
+    background: rgba(13, 110, 253, 0.3);
+}
+
+.month-dropdown-content.show {
+    display: block;
+}
+
+/* نمایش بازه زمانی */
+.date-range-badge {
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+    padding: 8px 15px;
+    font-size: 13px;
+    color: #FFD700;
+}
+
+/* ===== سه باکس بالا ===== */
+.top-boxes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.info-box {
+    padding: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.info-body {
+    padding: 15px;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, .8);
+    font-size: 14px;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #fff;
+    font-size: 16px;
+}
+
+.success {
+    color: #2ed573;
+}
+
+.warning {
+    color: #ffa502;
+}
+
+.danger {
+    color: #ff4757;
+}
+
+/* ===== خلاصه فروش ===== */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    padding: 15px;
+}
+
+.summary-item {
+    text-align: center;
+}
+
+.summary-title {
+    color: rgba(255, 255, 255, .75);
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.summary-number {
+    color: #FFD700;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.summary-small {
+    color: rgba(255, 255, 255, .7);
+    font-size: 12px;
+}
+
+/* ===== دکمه‌ها ===== */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+}
+
+.action-buttons .btn {
+    border-radius: 14px;
+    padding: 12px;
+    font-weight: bold;
+}
+
+/* ===== نمودار ===== */
+.chart-card {
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.chart-body {
+    padding: 20px;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+/* ===== جداول ===== */
+.report-table {
+    width: 100%;
+    color: white;
+}
+
+.report-table tr {
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.report-table td,
+.report-table th {
+    padding: 12px;
+}
+
+.report-table th {
+    color: #FFD700;
+}
+
+/* ===== ریسپانسیو ===== */
+@media(max-width:992px) {
+    .top-boxes {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .filter-btn,
+    .month-dropdown {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .month-dropdown-content {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 300px;
+        z-index: 9999;
+    }
+}
+</style>
+
+<!-- ===== فیلتر ===== -->
+<div class="filter-section">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <h4 class="text-white mb-0">
+            <i class="fas fa-chart-line text-success"></i>
+            گزارش جامع مفاد و ضرر
+        </h4>
+        
+        <div class="filter-buttons">
+            <a href="?filter=today" class="filter-btn {% if selected_filter == 'today' %}active{% endif %}">
+                📅 امروز
+            </a>
+            
+            <a href="?filter=week" class="filter-btn {% if selected_filter == 'week' %}active{% endif %}">
+                📊 هفته جاری
+            </a>
+            
+            <a href="?filter=month" class="filter-btn {% if selected_filter == 'month' %}active{% endif %}">
+                📆 ماه جاری
+            </a>
+            
+            <!-- کشوی انتخاب ماه -->
+            <div class="month-dropdown">
+                <button class="filter-btn" onclick="toggleMonthDropdown(event)">
+                    📅 انتخاب ماه ▼
+                </button>
+                <div class="month-dropdown-content" id="monthDropdown">
+                    {% if months_list %}
+                        {% for month_num, month_name in months_list %}
+                            <a href="?filter=month&month={{ month_num }}">{{ month_name }}</a>
+                        {% endfor %}
+                    {% else %}
+                        <a href="?filter=month&month=1">حمل</a>
+                        <a href="?filter=month&month=2">ثور</a>
+                        <a href="?filter=month&month=3">جوزا</a>
+                        <a href="?filter=month&month=4">سرطان</a>
+                        <a href="?filter=month&month=5">اسد</a>
+                        <a href="?filter=month&month=6">سنبله</a>
+                        <a href="?filter=month&month=7">میزان</a>
+                        <a href="?filter=month&month=8">عقرب</a>
+                        <a href="?filter=month&month=9">قوس</a>
+                        <a href="?filter=month&month=10">جدی</a>
+                        <a href="?filter=month&month=11">دلو</a>
+                        <a href="?filter=month&month=12">حوت</a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <a href="?filter=all" class="filter-btn {% if selected_filter == 'all' %}active{% endif %}">
+                🗓️ همه زمان
+            </a>
+        </div>
+    </div>
+    
+    {% if start_date and end_date %}
+    <div class="mt-3 text-center">
+        <span class="date-range-badge">
+            <i class="fas fa-calendar-alt"></i>
+            بازه زمانی: از {{ start_date.strftime('%Y-%m-%d') if start_date else '---' }}
+            تا {{ end_date.strftime('%Y-%m-%d') if end_date else '---' }}
+        </span>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== سه باکس ===== -->
+<div class="top-boxes">
+    <!-- موجودی کالا -->
+    <div class="glass-card info-box">
+        <div class="card-header-custom">
+            <h5><i class="fas fa-boxes"></i> 📦 موجودی کالا</h5>
+        </div>
+        <div class="info-body">
+            <div class="stat-row">
+                <span class="stat-label">📊 مجموع موجودی (دانه)</span>
+                <span class="stat-value success">
+                    {{ "{:,.0f}".format(total_items_count|default(0)) }}
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">💰 ارزش موجودی (فروش)</span>
+                <span class="stat-value success">
+                    {{ "{:,.0f}".format(total_inventory_value|default(0)) }} افغانی
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">🏷️ بهای تمام شده</span>
+                <span class="stat-value">
+                    {{ "{:,.0f}".format(total_inventory_cost|default(0)) }} افغانی
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">📈 مفاد بالقوه</span>
+                <span class="stat-value success">
+                    {{ "{:,.0f}".format((total_inventory_value|default(0)) - (total_inventory_cost|default(0))) }} افغانی
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- وضعیت مالی -->
+    <div class="glass-card info-box">
+        <div class="card-header-custom">
+            <h5><i class="fas fa-chart-pie"></i> 💰 وضعیت مالی</h5>
+        </div>
+        <div class="info-body">
+            <div class="stat-row">
+                <span class="stat-label">🏦 کل دارایی‌ها</span>
+                <span class="stat-value success">
+                    {{ "{:,.0f}".format(total_assets|default(0)) }} افغانی
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">💵 موجودی نقدی (صندوق)</span>
+                <span class="stat-value">
+                    {{ "{:,.0f}".format(cash_balance|default(0)) }} افغانی
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">⚖️ خالص قرض داری</span>
+                <span class="stat-value warning">
+                    {{ "{:,.0f}".format(net_debt_position|default(0)) }} افغانی
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- مطالبات و قرض داری -->
+    <div class="glass-card info-box">
+        <div class="card-header-custom">
+            <h5><i class="fas fa-handshake"></i> 🤝 مطالبات و قرض داری</h5>
+        </div>
+        <div class="info-body">
+            <div class="stat-row">
+                <span class="stat-label">👥 مطالبات از مشتریان</span>
+                <span class="stat-value warning">
+                    {{ "{:,.0f}".format(total_customer_debt|default(0)) }} افغانی
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">🏢 قرض داری به طلبکاران</span>
+                <span class="stat-value danger">
+                    {{ "{:,.0f}".format(total_creditor_debt|default(0)) }} افغانی
+                </span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">📊 تعداد فاکتورها</span>
+                <span class="stat-value">
+                    {{ sales_count|default(0) }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== خلاصه فروش و مفاد ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-chart-line"></i> 📈 خلاصه فروش و مفاد</h5>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-title">💰 فروش کل</div>
+                    <div class="summary-number">
+                        {{ "{:,.0f}".format(total_sales|default(0)) }}
+                    </div>
+                    <div class="summary-small">
+                        {{ sales_count|default(0) }} فاکتور
+                    </div>
+                </div>
+                
+                <div class="summary-item">
+                    <div class="summary-title">📈 مفاد ناخالص</div>
+                    <div class="summary-number text-success">
+                        {{ "{:,.0f}".format(gross_profit|default(0)) }}
+                    </div>
+                    <div class="summary-small">
+                        {{ "%.1f"|format(gross_profit_margin|default(0)) }}%
+                    </div>
+                </div>
+                
+                <div class="summary-item">
+                    <div class="summary-title">🎯 مفاد خالص</div>
+                    <div class="summary-number text-warning">
+                        {{ "{:,.0f}".format(net_profit|default(0)) }}
+                    </div>
+                    <div class="summary-small">
+                        {{ "%.1f"|format(net_profit_margin|default(0)) }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- دکمه‌های عملیات سریع -->
+    <div class="col-lg-4">
+        <div class="glass-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-cog"></i> ⚡ عملیات سریع</h5>
+            </div>
+            <div class="action-buttons">
+                <a href="{{ url_for('main_bp.export_options') }}" class="btn btn-primary">
+                    <i class="fas fa-file-excel"></i> 📊 گزارش Excel
+                </a>
+                
+                <a href="{{ url_for('main_bp.cash_balance') }}" class="btn btn-danger">
+                    <i class="fas fa-money-bill-wave"></i> 💵 موجودی نقدی (صندوق)
+                </a>
+                
+                <a href="{{ url_for('main_bp.user_activities_report') }}" class="btn btn-info">
+                    <i class="fas fa-receipt"></i> 👨‍💼 فعالیت کاربران
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== درآمدها و هزینه‌ها ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="glass-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-money-bill-wave"></i> 💵 درآمدها</h5>
+            </div>
+            <div class="p-3">
+                <table class="report-table">
+                    <tr>
+                        <th>💰 فروش ناخالص</th>
+                        <td>{{ "{:,.0f}".format(total_sales|default(0)) }} افغانی</td>
+                    </tr>
+                    <tr>
+                        <th>🏷️ تخفیف‌ها</th>
+                        <td class="danger">- {{ "{:,.0f}".format(total_discounts|default(0)) }} افغانی</td>
+                    </tr>
+                  
+                    <tr class="border-top">
+                        <th><strong>✅ درآمد خالص</strong></th>
+                        <td class="success">
+                            <strong>{{ "{:,.0f}".format((total_sales|default(0)) - (total_discounts|default(0)) + (total_loans_received|default(0))) }} افغانی</strong>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="glass-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-receipt"></i> 🧾 هزینه‌ها</h5>
+            </div>
+            <div class="p-3">
+                <table class="report-table">
+                    <tr>
+                        <th>🏷️ بهای تمام شده</th>
+                        <td>{{ "{:,.0f}".format(total_cost_of_goods_sold|default(0)) }} افغانی</td>
+                    </tr>
+                    <tr>
+                        <th>📝 مصارف روزانه</th>
+                        <td>{{ "{:,.0f}".format(total_expenses|default(0)) }} افغانی</td>
+                    </tr>
+                    <tr>
+                        <th>📉 زیان موجودی</th>
+                        <td>{{ "{:,.0f}".format(total_inventory_loss|default(0)) }} افغانی</td>
+                    </tr>
+            
+                    <tr class="border-top">
+                        <th><strong>⚠️ هزینه کل</strong></th>
+                        <td class="warning">
+                            <strong>{{ "{:,.0f}".format(
+                                (total_cost_of_goods_sold|default(0)) +
+                                (total_expenses|default(0)) +
+                                (total_inventory_loss|default(0)) +
+                                (total_loan_payments|default(0))
+                            ) }} افغانی</strong>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="glass-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-undo-alt"></i> 🔄 واپسی‌ها</h5>
+            </div>
+            <div class="p-3">
+                <table class="report-table">
+                    <tr>
+                        <th>تعداد واپسی‌ها</th>
+                        <td class="warning">{{ returns_count|default(0) }}</td>
+                    </tr>
+                    <tr>
+                        <th>مبلغ واپسی</th>
+                        <td class="danger">{{ "{:,.0f}".format(total_returns_amount|default(0)) }} افغانی</td>
+                    </tr>
+                    <tr>
+                        <th>سود کسر شده از واپسی</th>
+                        <td class="danger">{{ "{:,.0f}".format(total_profit_from_returns|default(0)) }} افغانی</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== بخش جدید: برداشت‌های شخصی از صندوق ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="glass-card">
+            <div class="card-header-custom" style="background: rgba(255, 165, 0, 0.2);">
+                <h5><i class="fas fa-hand-holding-usd"></i> 💸 برداشت‌های شخصی از صندوق</h5>
+            </div>
+            <div class="p-3">
+                <!-- خلاصه برداشت‌ها -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="summary-item">
+                            <div class="summary-title">💰 مجموع برداشت‌ها</div>
+                            <div class="summary-number text-warning">
+                                {{ "{:,.0f}".format(total_withdrawals|default(0)) }}
+                            </div>
+                            <div class="summary-small">
+                                {{ withdrawals_count|default(0) }} برداشت
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="summary-item">
+                            <div class="summary-title">📊 تأثیر بر سود خالص</div>
+                            <div class="summary-number text-danger">
+                                - {{ "{:,.0f}".format(total_withdrawals|default(0)) }}
+                            </div>
+                            <div class="summary-small">
+                                سود خالص بعد از برداشت: {{ "{:,.0f}".format(net_profit_after_withdrawals|default(0)) }} افغانی
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- جدول برداشت‌ها بر اساس کاربر 
+                <div class="table-responsive mb-4">
+                    <h6 class="text-warning mb-3"><i class="fas fa-users"></i> 📋 برداشت‌ها بر اساس کاربر</h6>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>کاربر</th>
+                                <th>تعداد برداشت</th>
+                                <th>مجموع مبلغ</th>
+                                <th>جزئیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if withdrawals_by_user %}
+                                {% for user_name, data in withdrawals_by_user.items() %}
+                                <tr>
+                                    <td class="fw-bold">{{ user_name }}</td>
+                                    <td>{{ data.count }} بار</td>
+                                    <td class="text-warning">{{ "{:,.0f}".format(data.amount) }} افغانی</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info" onclick="showWithdrawalsDetails('{{ user_name }}', {{ data.details|tojson }})">
+                                            <i class="fas fa-eye"></i> مشاهده
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="4" class="text-center text-muted">هیچ برداشتی در این بازه ثبت نشده است</td></tr>
+                            {% endif %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top">
+                                <th>جمع کل</th>
+                                <th>{{ withdrawals_count|default(0) }}</th>
+                                <th class="text-warning">{{ "{:,.0f}".format(total_withdrawals|default(0)) }} افغانی</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <!-- جدول برداشت‌ها بر اساس هدف 
+                <div class="table-responsive mb-4">
+                    <h6 class="text-warning mb-3"><i class="fas fa-tags"></i> 🏷️ برداشت‌ها بر اساس هدف</h6>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>هدف برداشت</th>
+                                <th>مجموع مبلغ</th>
+                                <th>درصد از کل برداشت‌ها</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if withdrawals_by_purpose %}
+                                {% for purpose, amount in withdrawals_by_purpose.items() %}
+                                <tr>
+                                    <td>
+                                        {% if purpose == 'حقوق' %}
+                                            <i class="fas fa-user-tie"></i>
+                                        {% elif purpose == 'خرید' %}
+                                            <i class="fas fa-shopping-cart"></i>
+                                        {% elif purpose == 'قبض' %}
+                                            <i class="fas fa-file-invoice"></i>
+                                        {% elif purpose == 'اجاره' %}
+                                            <i class="fas fa-building"></i>
+                                        {% else %}
+                                            <i class="fas fa-other"></i>
+                                        {% endif %}
+                                        {{ purpose }}
+                                    </td>
+                                    <td class="text-warning">{{ "{:,.0f}".format(amount) }} افغانی</td>
+                                    <td>{{ "%.1f"|format((amount / total_withdrawals * 100) if total_withdrawals > 0 else 0) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="3" class="text-center text-muted">هیچ برداشتی در این بازه ثبت نشده است</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>-->
+                
+                <!-- لیست آخرین برداشت‌ها -->
+                {% if withdrawals_list and withdrawals_list|length > 0 %}
+                <div class="mt-4">
+                    <h6 class="text-warning mb-3"><i class="fas fa-history"></i> 🕒 آخرین برداشت‌ها</h6>
+                    <div class="table-responsive">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>تاریخ</th>
+                                    <th>کاربر</th>
+                                    <th>هدف</th>
+                                    <th>مبلغ</th>
+                                    <th>توضیحات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for w in withdrawals_list[:10] %}
+                                <tr>
+                                    <td>{{ w.withdrawal_date.strftime('%Y-%m-%d %H:%M') if w.withdrawal_date else 'نامشخص' }}</td>
+                                    <td>{{ w.employee.full_name if w.employee else 'نامشخص' }}</td>
+                                    <td>{{ w.purpose }}</td>
+                                    <td class="text-warning">{{ "{:,.0f}".format(w.amount) }} افغانی</td>
+                                    <td>{{ w.description or '---' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== نمودار فروش روزانه ===== -->
+<div class="glass-card chart-card mb-4">
+    <div class="card-header-custom">
+        <h5><i class="fas fa-chart-bar"></i> 📊 نمودار فروش روزانه</h5>
+    </div>
+    <div class="chart-body">
+        <div class="chart-container">
+            <canvas id="dailySalesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ===== دو نمودار کنار هم ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="glass-card chart-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-chart-line"></i> 📈 نمودار مفاد و ضرر</h5>
+            </div>
+            <div class="chart-body">
+                <div class="chart-container">
+                    <canvas id="profitBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-5">
+        <div class="glass-card chart-card">
+            <div class="card-header-custom">
+                <h5><i class="fas fa-chart-pie"></i> 🥧 توزیع هزینه‌ها</h5>
+            </div>
+            <div class="chart-body">
+                <div class="chart-container">
+                    <canvas id="expensesChart"></canvas>
+                </div>
+            </div>
+            {% if expenses_labels and expenses_labels|length > 0 %}
+            <div class="p-3 pt-0">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>دسته‌بندی</th>
+                            <th>مبلغ (افغانی)</th>
+                            <th>درصد</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set total = expenses_data|sum %}
+                        {% for i in range(expenses_labels|length) %}
+                        <tr>
+                            <td>{{ expenses_labels[i] }}</td>
+                            <td>{{ "{:,.0f}".format(expenses_data[i]) }} افغانی</td>
+                            <td>{{ "%.1f"|format((expenses_data[i] / total * 100) if total > 0 else 0) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center p-4">
+                <p class="text-muted">هیچ هزینه‌ای در بازه زمانی انتخاب شده ثبت نشده است</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ===== توضیحات پایین صفحه ===== -->
+<div class="text-center mt-4">
+    <small class="text-muted">
+        <i class="fas fa-info-circle"></i>
+        گزارش مفاد و ضرر بر اساس بازه زمانی انتخاب شده محاسبه گردیده است.
+        ارزش موجودی بر اساس قیمت فروش محاسبه شده است.
+        موجودی نقدی (صندوق) فقط پول فیزیکی موجود در صندوق را نمایش می‌دهد.
+    </small>
+</div>
+
+</div>
+
+<!-- مودال برای نمایش جزئیات برداشت‌ها -->
+<div class="modal fade" id="withdrawalsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: #1a1a2e; color: white;">
+            <div class="modal-header" style="border-bottom-color: #FFD700;">
+                <h5 class="modal-title" id="withdrawalsModalTitle">
+                    <i class="fas fa-hand-holding-usd text-warning"></i> جزئیات برداشت‌ها
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="withdrawalsModalBody">
+                <!-- محتوا با جاوااسکریپت پر می‌شود -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Chart JS ===== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ==================== کشوی انتخاب ماه ====================
+function toggleMonthDropdown(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const dropdown = document.getElementById('monthDropdown');
+    dropdown.classList.toggle('show');
+    
+    function closeDropdown(e) {
+        if (!e.target.closest('.month-dropdown')) {
+            dropdown.classList.remove('show');
+            document.removeEventListener('click', closeDropdown);
+        }
+    }
+    
+    if (dropdown.classList.contains('show')) {
+        document.addEventListener('click', closeDropdown);
+    }
+}
+
+// ==================== نمایش جزئیات برداشت‌ها ====================
+function showWithdrawalsDetails(userName, details) {
+    const modalBody = document.getElementById('withdrawalsModalBody');
+    const modalTitle = document.getElementById('withdrawalsModalTitle');
+    
+    modalTitle.innerHTML = `<i class="fas fa-user"></i> جزئیات برداشت‌های ${userName}`;
+    
+    let html = `
+        <table class="table table-dark table-bordered">
+            <thead>
+                <tr>
+                    <th>تاریخ</th>
+                    <th>هدف</th>
+                    <th>مبلغ</th>
+                    <th>توضیحات</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    let total = 0;
+    details.forEach(d => {
+        total += d.amount;
+        html += `
+            <tr>
+                <td>${d.date}</td>
+                <td>${d.purpose}</td>
+                <td class="text-warning">${d.amount.toLocaleString('fa-IR')} افغانی</td>
+                <td>${d.description || '---'}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+            <tfoot class="border-top">
+                <tr>
+                    <th colspan="2">جمع کل</th>
+                    <th class="text-warning">${total.toLocaleString('fa-IR')} افغانی</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+    
+    modalBody.innerHTML = html;
+    
+    // نمایش مودال
+    const modal = new bootstrap.Modal(document.getElementById('withdrawalsModal'));
+    modal.show();
+}
+
+// ==================== نمودارها ====================
+document.addEventListener('DOMContentLoaded', function() {
+    // نمودار فروش روزانه
+    const salesCtx = document.getElementById('dailySalesChart');
+    const dailySalesLabels = {{ daily_sales_labels|tojson|default([]) }};
+    const dailySalesData = {{ daily_sales_data|tojson|default([]) }};
+    
+    if (salesCtx && dailySalesLabels && dailySalesLabels.length > 0) {
+        new Chart(salesCtx, {
+            type: 'bar',
+            data: {
+                labels: dailySalesLabels,
+                datasets: [{
+                    label: 'فروش (افغانی)',
+                    data: dailySalesData,
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(54, 162, 235, .7)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw.toLocaleString('fa-IR') + ' افغانی';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('fa-IR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // نمودار مفاد و ضرر
+    const profitCtx = document.getElementById('profitBarChart');
+    const chartLabels = {{ chart_labels|tojson|default([]) }};
+    const chartData = {{ chart_data|tojson|default([]) }};
+    
+    if (profitCtx && chartLabels && chartLabels.length > 0) {
+        new Chart(profitCtx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'مبلغ (افغانی)',
+                    data: chartData,
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(46, 213, 115, .7)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw.toLocaleString('fa-IR') + ' افغانی';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('fa-IR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // نمودار توزیع هزینه‌ها
+    const expenseCtx = document.getElementById('expensesChart');
+    const expensesLabels = {{ expenses_labels|tojson|default([]) }};
+    const expensesData = {{ expenses_data|tojson|default([]) }};
+    
+    if (expenseCtx && expensesLabels && expensesLabels.length > 0) {
+        const totalExpenses = expensesData.reduce((a, b) => a + b, 0);
+        
+        new Chart(expenseCtx, {
+            type: 'doughnut',
+            data: {
+                labels: expensesLabels,
+                datasets: [{
+                    data: expensesData,
+                    backgroundColor: [
+                        '#ff4757', '#ffa502', '#1e90ff', '#2ed573', '#a55eea',
+                        '#5f27cd', '#00d2d3', '#ff6b81', '#feca57', '#48dbfb'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const percentage = ((value / totalExpenses) * 100).toFixed(1);
+                                return `${context.label}: ${value.toLocaleString('fa-IR')} افغانی (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '50%'
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

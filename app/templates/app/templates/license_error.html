@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>فعال‌سازی سیستم</title>
+    <style>
+        body { 
+            font-family: Tahoma, Arial, sans-serif; 
+            background: #f5f5f5; 
+            margin: 0; 
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 48px;
+            color: #ff9800;
+            margin-bottom: 20px;
+        }
+        .system-id {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 18px;
+            direction: ltr;
+        }
+        .contact {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-icon">🔒</div>
+        <h1>سیستم نیاز به فعال‌سازی دارد</h1>
+        <p>برنامه مدیریت سوپرمارکت برای این سیستم فعال‌سازی نشده است.</p>
+        
+        <div class="system-id">
+            <strong>کد سیستم شما:</strong><br>
+            {{ system_id }}
+        </div>
+        
+        <div class="contact">
+            <strong>لطفاً این کد را برای فعال‌سازی ارسال کنید:</strong><br>
+            📞 تماس با پشتیبانی
+        </div>
+        
+        <p style="margin-top: 20px; color: #666;">
+            پس از فعال‌سازی، برنامه را دوباره راه‌اندازی کنید.
+        </p>
+    </div>
+</body>
+</html>
