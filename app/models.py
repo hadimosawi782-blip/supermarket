@@ -243,6 +243,9 @@ class Product(db.Model):
 
     # ارتباط با طلبکار (برای خرید قرضی)
     creditor_id = db.Column(db.Integer, db.ForeignKey("creditors.id"), nullable=True)
+    # ✅ اضافه کردن این دو فیلد جدید
+    is_credit_purchase = db.Column(db.Boolean, default=False)  # آیا محصول قرضی خریداری شده
+    credit_amount = db.Column(db.Float, default=0.0) 
 
     # زمان‌ها
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

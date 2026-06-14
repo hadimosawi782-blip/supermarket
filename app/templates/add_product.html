@@ -47,6 +47,8 @@
                         <div class="col-md-6">
                             <label class="addproduct-label">نام محصول <span class="text-danger">*</span></label>
                             {{ form.name(class="form-control addproduct-input", id="productName", placeholder="مثال: شیر کاله") }}
+                            <div id="nameWarning" class="mt-2" style="display: none;"></div>
+                            <small class="text-muted">نام محصول باید یکتا باشد - در صورت تکراری بودن اخطار داده می‌شود</small>
                         </div>
                         <div class="col-md-6">
                             <label class="addproduct-label">شماره بچ (Batch)</label>
@@ -148,6 +150,7 @@
                         <i class="fas fa-info-circle"></i> ℹ️ 
                         <strong>نکات مهم:</strong>
                         <ul class="mt-2 mb-0">
+                            <li>✅ نام محصول <strong>باید یکتا باشد</strong> - در صورت تکراری بودن، سیستم اخطار می‌دهد</li>
                             <li>✅ بارکد محصول <strong>اختیاری</strong> است - در صورت وارد کردن باید یکتا باشد</li>
                             <li>💰 واحد پول: <strong>افغانی (AFN)</strong></li>
                             <li>📊 تعداد کل به صورت خودکار از مجموع (تعداد کارتن × تعداد در کارتن + تعداد تکی) محاسبه می‌شود</li>
@@ -266,6 +269,37 @@
     font-size: 12px;
 }
 
+/* استایل برای هشدارها */
+.alert {
+    padding: 12px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+.alert-success {
+    background: rgba(46, 213, 115, 0.2);
+    border: 1px solid #2ed573;
+    color: #2ed573;
+}
+
+.alert-danger {
+    background: rgba(255, 71, 87, 0.2);
+    border: 1px solid #ff4757;
+    color: #ff4757;
+}
+
+.alert-warning {
+    background: rgba(255, 165, 2, 0.2);
+    border: 1px solid #ffa502;
+    color: #ffa502;
+}
+
+.alert-info {
+    background: rgba(34, 211, 238, 0.2);
+    border: 1px solid #22d3ee;
+    color: #22d3ee;
+}
+
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -333,8 +367,113 @@ async function searchByBarcode() {
     setTimeout(() => messageDiv.style.display = 'none', 3000);
 }
 
+// ============================================
+// بررسی تکراری بودن محصول
+// ============================================
+
+let checkTimeout = null;
+let isChecking = false;
+let lastCheckedName = '';
+
+async function checkDuplicateProduct() {
+    const productName = document.getElementById('productName')?.value.trim();
+    const nameWarning = document.getElementById('nameWarning');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!productName) {
+        if (nameWarning) {
+            nameWarning.style.display = 'none';
+            nameWarning.innerHTML = '';
+        }
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+    }
+    
+    if (productName === lastCheckedName && !isChecking) {
+        return;
+    }
+    
+    lastCheckedName = productName;
+    isChecking = true;
+    
+    if (nameWarning) {
+        nameWarning.style.display = 'block';
+        nameWarning.innerHTML = '<div class="alert alert-info">🔍 در حال بررسی نام محصول...</div>';
+    }
+    
+    if (submitBtn) submitBtn.disabled = true;
+    
+    try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+        
+        const response = await fetch('/api/products/check-duplicate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ name: productName })
+        });
+        
+        const data = await response.json();
+        
+        if (data.duplicate) {
+            if (nameWarning) {
+                nameWarning.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong><i class="fas fa-exclamation-triangle"></i> ${data.message}</strong>
+                        <div class="mt-2">
+                            <small>📦 موجودی: ${data.existing_product.quantity} عدد</small><br>
+                            <small>💰 قیمت خرید: ${data.existing_product.buying_price.toLocaleString()} افغانی</small><br>
+                            <small>💵 قیمت فروش: ${data.existing_product.selling_price.toLocaleString()} افغانی</small>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-warning" onclick="showExistingProduct(${data.existing_product.id})">
+                                <i class="fas fa-eye"></i> مشاهده محصول موجود
+                            </button>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addToExistingProduct(${data.existing_product.id})">
+                                <i class="fas fa-plus"></i> افزایش موجودی محصول موجود
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            if (submitBtn) submitBtn.disabled = true;
+        } else {
+            if (nameWarning) {
+                nameWarning.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> ${data.message}
+                    </div>
+                `;
+            }
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('خطا در بررسی:', error);
+        if (nameWarning) {
+            nameWarning.innerHTML = '<div class="alert alert-warning">⚠️ خطا در بررسی، لطفاً دوباره تلاش کنید</div>';
+        }
+        if (submitBtn) submitBtn.disabled = false;
+    } finally {
+        isChecking = false;
+    }
+}
+
+// نمایش محصول موجود
+function showExistingProduct(productId) {
+    window.location.href = `/products/view/${productId}`;
+}
+
+// افزایش موجودی محصول موجود
+function addToExistingProduct(productId) {
+    if (confirm('آیا می‌خواهید موجودی محصول موجود را افزایش دهید؟')) {
+        window.location.href = `/products/edit/${productId}`;
+    }
+}
+
 // اعتبارسنجی فرم قبل از ارسال
-function validateForm() {
+async function validateForm() {
     const productName = document.getElementById('productName')?.value.trim();
     const buyingPrice = parseFloat(document.getElementById('buyingPrice')?.value) || 0;
     const sellingPrice = parseFloat(document.getElementById('sellingPrice')?.value) || 0;
@@ -344,6 +483,28 @@ function validateForm() {
         showToast('❌ لطفاً نام محصول را وارد کنید', 'error');
         document.getElementById('productName').focus();
         return false;
+    }
+    
+    // بررسی نهایی تکراری بودن
+    try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+        const response = await fetch('/api/products/check-duplicate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ name: productName })
+        });
+        
+        const data = await response.json();
+        
+        if (data.duplicate) {
+            showToast(`❌ ${data.message}`, 'error');
+            return false;
+        }
+    } catch (error) {
+        console.error('خطا:', error);
     }
     
     if (buyingPrice <= 0) {
@@ -387,21 +548,57 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.style.display = 'none', 3000);
 }
 
-// رویدادهای ورودی
+// راه‌اندازی رویدادها
+function setupDuplicateCheck() {
+    const productNameInput = document.getElementById('productName');
+    if (productNameInput) {
+        productNameInput.addEventListener('input', function() {
+            if (checkTimeout) clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(checkDuplicateProduct, 800);
+        });
+        
+        productNameInput.addEventListener('blur', function() {
+            if (checkTimeout) clearTimeout(checkTimeout);
+            checkDuplicateProduct();
+        });
+    }
+}
+
+// مقداردهی اولیه
 document.addEventListener('DOMContentLoaded', function() {
     const itemsPerCarton = document.getElementById('itemsPerCarton');
     const cartonQuantity = document.getElementById('cartonQuantity');
     const singleQuantity = document.getElementById('singleQuantity');
     const form = document.getElementById('productForm');
+    const purchaseType = document.getElementById('purchaseType');
+    const creditorField = document.getElementById('creditorId');
     
     if (itemsPerCarton) itemsPerCarton.addEventListener('input', calculateTotalQuantity);
     if (cartonQuantity) cartonQuantity.addEventListener('input', calculateTotalQuantity);
     if (singleQuantity) singleQuantity.addEventListener('input', calculateTotalQuantity);
     
+    // نمایش/عدم نمایش فیلد طلبکار بر اساس نوع خرید
+    function toggleCreditorField() {
+        if (purchaseType && creditorField) {
+            const creditorRow = creditorField.closest('.col-md-4');
+            if (purchaseType.value === 'credit') {
+                creditorRow.style.display = 'block';
+            } else {
+                creditorRow.style.display = 'none';
+                creditorField.value = '';
+            }
+        }
+    }
+    
+    if (purchaseType) {
+        purchaseType.addEventListener('change', toggleCreditorField);
+        toggleCreditorField();
+    }
+    
     // اعتبارسنجی قبل از ارسال
     if (form) {
-        form.addEventListener('submit', function(e) {
-            if (!validateForm()) {
+        form.addEventListener('submit', async function(e) {
+            if (!await validateForm()) {
                 e.preventDefault();
             }
         });
@@ -417,6 +614,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // بررسی تکراری بودن
+    setupDuplicateCheck();
     
     // محاسبه اولیه
     calculateTotalQuantity();
@@ -438,10 +638,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .toast.error {
     background: #dc3545;
-}
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 </style>
 

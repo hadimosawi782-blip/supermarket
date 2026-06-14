@@ -4132,21 +4132,77 @@ def edit_product(product_id):
         traceback.print_exc()
         flash(f"❌ خطا در ویرایش محصول: {str(e)}", "danger")
         return render_template("edit_product.html", form=form, product=product, creditors=creditors)
-            
 @main_bp.route("/products/delete/<int:product_id>", methods=["POST"])
 @login_required
 def delete_product(product_id):
+    """حذف محصول و به‌روزرسانی قرض طلبکار"""
+    from app.models import Product, Creditor, DebtTransaction
+    from datetime import datetime
+    
     product = Product.query.get_or_404(product_id)
+    
     try:
+        product_name = product.name
+        creditor_name = None
+        credit_reduced = 0
+        
+        # ============================================================
+        # مرحله 1: بررسی آیا محصول قرضی است
+        # ============================================================
+        if product.purchase_type == "credit" and product.creditor_id:
+            creditor = Creditor.query.get(product.creditor_id)
+            
+            if creditor:
+                creditor_name = creditor.name
+                
+                # محاسبه مبلغ قرض این محصول (تعداد کل × قیمت خرید)
+                total_quantity = product.total_items  # تعداد کل دانه‌ها
+                credit_amount = total_quantity * (product.buying_price or 0)
+                credit_reduced = credit_amount
+                
+                if credit_amount > 0:
+                    # ذخیره قرض قبلی برای لاگ
+                    old_debt = creditor.current_debt or 0
+                    
+                    # کاهش قرض طلبکار
+                    creditor.current_debt = max(0, old_debt - credit_amount)
+                    
+                    # ثبت تراکنش کاهش قرض در تاریخچه
+                    transaction = DebtTransaction(
+                        creditor_id=creditor.id,
+                        user_id=current_user.id,
+                        amount=-credit_amount,  # منفی برای کاهش
+                        transaction_type='product_debt_cancel',
+                        receipt_number=f"DEL_{product.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                        description=f"حذف محصول قرضی: {product_name} (تعداد: {total_quantity} عدد، قیمت خرید: {product.buying_price:,.0f} افغانی)",
+                        date_created=datetime.now()
+                    )
+                    db.session.add(transaction)
+                    
+                    # چاپ در کنسول برای دیباگ
+                    print(f"💰 قرض طلبکار {creditor_name}: {old_debt:,.0f} → {creditor.current_debt:,.0f} (کاهش: {credit_amount:,.0f})")
+        
+        # ============================================================
+        # مرحله 2: حذف محصول
+        # ============================================================
         db.session.delete(product)
         db.session.commit()
-        flash("✅ محصول با موفقیت حذف شد", "success")
+        
+        # ============================================================
+        # مرحله 3: نمایش پیام‌های موفقیت
+        # ============================================================
+        flash(f"✅ محصول {product_name} با موفقیت حذف شد", "success")
+        
+        if credit_reduced > 0:
+            flash(f"💰 قرض طلبکار {creditor_name} به مقدار {credit_reduced:,.0f} افغانی کاهش یافت", "info")
+        
+        return redirect(url_for('main_bp.list_products'))
+        
     except Exception as e:
         db.session.rollback()
-        flash(f"❌ خطا در حذف محصول: {str(e)}", "error")
         print(f"❌ خطا در حذف محصول: {str(e)}")
-    return redirect(url_for('main_bp.list_products'))
-
+        flash(f"❌ خطا در حذف محصول: {str(e)}", "error")
+        return redirect(url_for('main_bp.list_products'))
 # ==================== سیستم تراکنش طلبکاران ====================
 
 # 1. اول route تست را تعریف کنید
@@ -5832,3 +5888,40 @@ def cash_withdrawals_export_excel():
     except Exception as e:
         flash(f"❌ خطا در ایجاد فایل اکسل: {str(e)}", "danger")
         return redirect(url_for("main_bp.cash_balance"))
+    
+@main_bp.route("/api/products/check-duplicate", methods=["POST"])
+@login_required
+def check_product_duplicate():
+    """بررسی تکراری بودن محصول قبل از ثبت"""
+    from app.models import Product
+    
+    data = request.get_json()
+    product_name = data.get('name', '').strip()
+    product_id = data.get('product_id', None)  # برای ویرایش
+    
+    if not product_name:
+        return jsonify({'duplicate': False, 'message': ''})
+    
+    # جستجوی محصول با نام مشابه
+    query = Product.query.filter(Product.name == product_name)
+    
+    # اگر در حال ویرایش هستیم، خود محصول را از بررسی خارج کن
+    if product_id:
+        query = query.filter(Product.id != product_id)
+    
+    existing_product = query.first()
+    
+    if existing_product:
+        return jsonify({
+            'duplicate': True,
+            'message': f'⚠️ محصول "{product_name}" قبلاً در سیستم وجود دارد!',
+            'existing_product': {
+                'id': existing_product.id,
+                'name': existing_product.name,
+                'quantity': existing_product.total_items,
+                'buying_price': existing_product.buying_price,
+                'selling_price': existing_product.selling_price
+            }
+        })
+    
+    return jsonify({'duplicate': False, 'message': '✅ نام محصول قابل استفاده است'})

@@ -3,6 +3,9 @@ import hashlib
 import socket
 import subprocess
 from datetime import datetime, timedelta
+import os
+
+IS_RENDER = os.environ.get("RENDER") == "true"
 
 # ==================== ثابت‌ها ====================
 SECRET_KEY = "MY_SECRET_KEY_2025"
@@ -15,53 +18,69 @@ _hw_id_cache = None
 
 # ==================== شناسه سخت‌افزاری ====================
 def get_hardware_id():
+    
+    # نسخه آنلاین
+    if IS_RENDER:
+        return "ONLINE_SERVER"
+
     global _hw_id_cache
+
     if _hw_id_cache:
         return _hw_id_cache
-    
+
     components = []
-    
+
     try:
-        result = subprocess.run(['wmic', 'baseboard', 'get', 'serialnumber'], capture_output=True, text=True, timeout=3)
+        result = subprocess.run(
+            ['wmic', 'baseboard', 'get', 'serialnumber'],
+            capture_output=True,
+            text=True,
+            timeout=3
+        )
+
         lines = result.stdout.strip().split('\n')
+
         if len(lines) > 1 and lines[1].strip():
             components.append(f"MB:{lines[1].strip()}")
+
     except:
         pass
-    
+
     try:
-        result = subprocess.run(['wmic', 'cpu', 'get', 'processorid'], capture_output=True, text=True, timeout=3)
+        result = subprocess.run(
+            ['wmic', 'cpu', 'get', 'processorid'],
+            capture_output=True,
+            text=True,
+            timeout=3
+        )
+
         lines = result.stdout.strip().split('\n')
+
         if len(lines) > 1 and lines[1].strip():
             components.append(f"CPU:{lines[1].strip()}")
+
     except:
         pass
-    
-    try:
-        result = subprocess.run(['vol', 'C:'], capture_output=True, text=True, timeout=3)
-        for line in result.stdout.split('\n'):
-            if 'Serial Number' in line or 'شماره سریال' in line:
-                serial = line.split()[-1].strip()
-                components.append(f"HDD:{serial}")
-                break
-    except:
-        pass
-    
+
     try:
         import uuid
         mac = uuid.getnode()
         components.append(f"MAC:{mac:012X}")
+
     except:
         pass
-    
-    components.append(f"HOST:{socket.gethostname()}")
-    
-    combined = "|".join(components)
-    hw_id = hashlib.sha256(combined.encode()).hexdigest()[:16].upper()
-    
-    _hw_id_cache = hw_id
-    return hw_id
 
+    components.append(f"HOST:{socket.gethostname()}")
+
+    combined = "|".join(components)
+
+    hw_id = hashlib.sha256(
+        combined.encode()
+    ).hexdigest()[:16].upper()
+
+    _hw_id_cache = hw_id
+
+    return hw_id
 # ==================== دریافت زمان واقعی (نسخه آفلاین فوق‌سریع) ====================
 def get_real_time():
     """نسخه آفلاین - فقط زمان سیستم"""
